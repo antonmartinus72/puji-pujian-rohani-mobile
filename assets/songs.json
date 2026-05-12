@@ -1,0 +1,95 @@
+{
+  "version": "1.0.0",
+  "updatedAt": "2026-01-10",
+  "totalSongs": 3,
+  "songs": [
+    {
+      "id": 1,
+      "title": "Haleluya",
+      "tags": ["pujian", "pembukaan"],
+      "lyrics": [
+        {
+          "label": "Verse 1",
+          "lines": [
+            "Haleluya, pujilah Tuhan",
+            "Dengan segenap hatimu"
+          ]
+        },
+        {
+          "label": "Chorus",
+          "lines": [
+            "Haleluya, haleluya",
+            "Mulia namaMu Tuhan"
+          ]
+        },
+        {
+          "label": "Verse 2",
+          "lines": [
+            "Angkat suara pujian",
+            "Bagi Dia yang layak dipuji"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Kasih Setia-Mu",
+      "tags": ["pujian"],
+      "lyrics": [
+        {
+          "label": "Verse 1",
+          "lines": [
+            "Kasih setia-Mu baru tiap pagi",
+            "Pengharapan dalam hidupku"
+          ]
+        },
+        {
+          "label": "Chorus",
+          "lines": [
+            "Yesus Kaulah segalanya",
+            "Kaulah jalan dan kebenaran"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Tuhan Yesus Baik",
+      "tags": ["doa", "penutup"],
+      "lyrics": [
+        {
+          "label": "Verse 1",
+          "lines": [
+            "Tuhan Yesus baik selamanya",
+            "Penuh kasih dan pengampunan"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Dihadapan Hadirat-Mu",
+      "tags": ["pujian"],
+      "lyrics": [
+        {
+          "label": "Verse 1",
+          "lines": [
+            "Dihadapan Hadirat-Mu ya Bapa",
+            "Kudatang dengan penuh kerinduan",
+            "Dihadapan Hadirat-Mu ya Bapa",
+            "Segala keangkuhan hilang"
+          ]
+        },
+        {
+          "label": "Chorus",
+          "lines": [
+            "Kusembah Kau ya Bapa",
+            "Kusembah Kau ya Tuhan",
+            "Kutinggikan namaMu Yesus",
+            "Dalam hidupku, dalam hidupku slalu"
+          ]
+        }
+      ]
+    }
+  ]
+}
