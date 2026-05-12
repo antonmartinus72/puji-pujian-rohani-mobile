@@ -1,11 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  Animated,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import {
   PinchGestureHandler,
   ScrollView,
@@ -18,12 +12,21 @@ import LyricBlock from '../components/LyricBlock';
 import UpdateBanner from '../components/UpdateBanner';
 import { useSongs } from '../context/SongContext';
 import { useSetlist } from '../context/SetlistContext';
+import { KEYS, getItem, setItem } from '../services/storage';
 
-const MIN_ZOOM = 0.85;
-const MAX_ZOOM = 2.75;
+const MIN_FONT_SCALE = 0.85;
+const MAX_FONT_SCALE = 2.25;
+/** Semakin kecil, pinch terasa lebih lambat / mudah dikontrol (0.22–0.4 umumnya nyaman). */
+const PINCH_DAMPING = 0.28;
 
-function clampZoom(v) {
-  return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, v));
+function clampFontScale(v) {
+  return Math.min(MAX_FONT_SCALE, Math.max(MIN_FONT_SCALE, v));
+}
+
+/** Meredam scale mentah dari gesture (1 = netral) agar zoom tidak melonjak terlalu cepat. */
+function dampedPinchFactor(rawScale) {
+  const delta = rawScale - 1;
+  return 1 + delta * PINCH_DAMPING;
 }
 
 export default function SongReaderScreen({ navigation }) {
@@ -48,40 +51,56 @@ export default function SongReaderScreen({ navigation }) {
   } = useSetlist();
   const insets = useSafeAreaInsets();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  const animatedScale = useRef(new Animated.Value(1)).current;
-  const baseZoomRef = useRef(1);
-  const pinchBaseRef = useRef(1);
+  const [lyricFontScale, setLyricFontScale] = useState(1);
+  const lyricFontScaleRef = useRef(1);
+  const pinchOriginScale = useRef(1);
 
   useEffect(() => {
-    baseZoomRef.current = 1;
-    pinchBaseRef.current = 1;
-    animatedScale.setValue(1);
-  }, [currentSong?.id]);
-
-  const onPinchGestureEvent = useCallback(
-    (e) => {
-      if (e.nativeEvent.state === State.ACTIVE) {
-        const next = clampZoom(pinchBaseRef.current * e.nativeEvent.scale);
-        animatedScale.setValue(next);
+    let cancelled = false;
+    (async () => {
+      const raw = await getItem(KEYS.LYRIC_FONT_SCALE);
+      if (cancelled || raw == null) return;
+      const n = parseFloat(raw);
+      if (Number.isFinite(n)) {
+        const v = clampFontScale(n);
+        setLyricFontScale(v);
+        lyricFontScaleRef.current = v;
       }
-    },
-    [animatedScale]
-  );
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    lyricFontScaleRef.current = lyricFontScale;
+  }, [lyricFontScale]);
+
+  const persistLyricFontScale = useCallback((value) => {
+    setItem(KEYS.LYRIC_FONT_SCALE, String(value));
+  }, []);
+
+  const onPinchGestureEvent = useCallback((e) => {
+    const damped = dampedPinchFactor(e.nativeEvent.scale);
+    const next = clampFontScale(pinchOriginScale.current * damped);
+    setLyricFontScale(next);
+  }, []);
 
   const onPinchHandlerStateChange = useCallback(
     (e) => {
       const { state, oldState } = e.nativeEvent;
       if (state === State.BEGAN) {
-        pinchBaseRef.current = baseZoomRef.current;
+        pinchOriginScale.current = lyricFontScaleRef.current;
       }
       if (oldState === State.ACTIVE) {
-        const s = e.nativeEvent.scale;
-        baseZoomRef.current = clampZoom(pinchBaseRef.current * s);
-        animatedScale.setValue(baseZoomRef.current);
+        const damped = dampedPinchFactor(e.nativeEvent.scale);
+        const next = clampFontScale(pinchOriginScale.current * damped);
+        setLyricFontScale(next);
+        lyricFontScaleRef.current = next;
+        persistLyricFontScale(next);
       }
     },
-    [animatedScale]
+    [persistLyricFontScale]
   );
 
   const inSetlist = !!activeSession;
@@ -156,29 +175,24 @@ export default function SongReaderScreen({ navigation }) {
         keyboardShouldPersistTaps="handled"
         nestedScrollEnabled
       >
+        <Text style={styles.songTitle}>
+          {currentSong.id}. {currentSong.title}
+        </Text>
+        <View style={styles.rule} />
         <PinchGestureHandler
           onGestureEvent={onPinchGestureEvent}
           onHandlerStateChange={onPinchHandlerStateChange}
         >
-          <Animated.View
-            collapsable={false}
-            style={[
-              styles.zoomInner,
-              { transform: [{ scale: animatedScale }] },
-            ]}
-          >
-            <Text style={styles.songTitle}>
-              {currentSong.id}. {currentSong.title}
-            </Text>
-            <View style={styles.rule} />
+          <View collapsable={false} style={styles.lyricsPinchArea}>
             {(currentSong.lyrics || []).map((block, idx) => (
               <LyricBlock
                 key={idx}
                 label={block.label}
                 lines={block.lines}
+                fontScale={lyricFontScale}
               />
             ))}
-          </Animated.View>
+          </View>
         </PinchGestureHandler>
       </ScrollView>
 
@@ -273,9 +287,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 20,
   },
-  zoomInner: {
-    paddingBottom: 8,
-  },
   songTitle: {
     fontSize: 22,
     fontWeight: '700',
@@ -287,5 +298,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#cbd5e1',
     marginBottom: 20,
     maxWidth: 200,
+  },
+  lyricsPinchArea: {
+    paddingBottom: 8,
   },
 });

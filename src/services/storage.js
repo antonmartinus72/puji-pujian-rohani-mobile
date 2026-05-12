@@ -4,6 +4,7 @@ const KEYS = {
   SONGS_DATA: 'songs_data',
   SONGS_VERSION: 'songs_version',
   SETLISTS: 'setlists_data',
+  LYRIC_FONT_SCALE: 'lyric_font_scale',
 };
 
 export async function getItem(key) {
