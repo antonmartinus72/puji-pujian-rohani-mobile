@@ -41,9 +41,7 @@ export default function Sidebar({
   visible,
   onClose,
   onOpenSongList,
-  onOpenSearch,
   onOpenSetlists,
-  onOpenNumberPicker,
 }) {
   const insets = useSafeAreaInsets();
   const [modalShown, setModalShown] = useState(false);
@@ -127,30 +125,12 @@ export default function Sidebar({
           <Text style={styles.drawerHint}>Pilih tujuan</Text>
 
           <MenuRow
-            icon="musical-notes-outline"
-            label="Semua lagu"
-            subtitle="Daftar nomor dan judul"
+            icon="list-outline"
+            label="Daftar Lagu"
+            subtitle="Semua lagu, cari judul/lirik, atau saring nomor"
             onPress={() => {
               onClose();
               onOpenSongList?.();
-            }}
-          />
-          <MenuRow
-            icon="search-outline"
-            label="Cari lagu"
-            subtitle="Judul atau lirik"
-            onPress={() => {
-              onClose();
-              onOpenSearch?.();
-            }}
-          />
-          <MenuRow
-            icon="keypad-outline"
-            label="Nomor lagu"
-            subtitle="Lompat ke nomor tertentu"
-            onPress={() => {
-              onClose();
-              onOpenNumberPicker?.();
             }}
           />
           <MenuRow

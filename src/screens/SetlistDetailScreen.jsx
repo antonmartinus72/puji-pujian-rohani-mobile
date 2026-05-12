@@ -1,8 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Alert,
   FlatList,
-  Modal,
   Pressable,
   Share,
   StyleSheet,
@@ -14,7 +13,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useSongs } from '../context/SongContext';
 import { useSetlist } from '../context/SetlistContext';
-import { searchSongs } from '../utils/search';
 
 export default function SetlistDetailScreen({ navigation, route }) {
   const { setlistId } = route.params || {};
@@ -24,7 +22,6 @@ export default function SetlistDetailScreen({ navigation, route }) {
     getSetlist,
     renameSetlist,
     deleteSetlist,
-    addSongToSetlist,
     removeSongAt,
     moveSong,
     beginSession,
@@ -33,14 +30,10 @@ export default function SetlistDetailScreen({ navigation, route }) {
 
   const setlist = getSetlist(setlistId);
   const [name, setName] = useState(setlist?.name ?? '');
-  const [addOpen, setAddOpen] = useState(false);
-  const [addQ, setAddQ] = useState('');
 
   useEffect(() => {
     if (setlist) setName(setlist.name);
   }, [setlist?.name]);
-
-  const addResults = useMemo(() => searchSongs(songs, addQ), [songs, addQ]);
 
   if (!setlistId || !setlist) {
     return (
@@ -124,7 +117,15 @@ export default function SetlistDetailScreen({ navigation, route }) {
       </View>
 
       <View style={styles.toolbar}>
-        <Pressable style={styles.tool} onPress={() => setAddOpen(true)}>
+        <Pressable
+          style={styles.tool}
+          onPress={() =>
+            navigation.navigate('SongList', {
+              variant: 'pick',
+              setlistId,
+            })
+          }
+        >
           <Ionicons name="add" size={22} color="#fff" />
           <Text style={styles.toolText}>Tambah lagu</Text>
         </Pressable>
@@ -196,49 +197,6 @@ export default function SetlistDetailScreen({ navigation, route }) {
         </Pressable>
       </View>
 
-      <Modal
-        visible={addOpen}
-        animationType="slide"
-        onRequestClose={() => setAddOpen(false)}
-      >
-        <View style={[styles.addRoot, { paddingTop: insets.top }]}>
-          <View style={styles.addHeader}>
-            <Pressable
-              onPress={() => setAddOpen(false)}
-              style={styles.addCloseRow}
-              hitSlop={12}
-            >
-              <Ionicons name="close" size={26} color="#475569" />
-              <Text style={styles.addCloseLabel}>Tutup</Text>
-            </Pressable>
-            <Text style={styles.addTitle}>Pilih lagu</Text>
-          </View>
-          <TextInput
-            value={addQ}
-            onChangeText={setAddQ}
-            placeholder="Cari judul atau lirik…"
-            style={styles.addSearch}
-          />
-          <FlatList
-            data={addResults}
-            keyExtractor={(s) => String(s.id)}
-            keyboardShouldPersistTaps="handled"
-            renderItem={({ item }) => (
-              <Pressable
-                style={styles.addRow}
-                onPress={() => {
-                  addSongToSetlist(setlistId, item.id);
-                  setAddOpen(false);
-                  setAddQ('');
-                }}
-              >
-                <Text style={styles.addRowNum}>{item.id}</Text>
-                <Text style={styles.addRowTitle}>{item.title}</Text>
-              </Pressable>
-            )}
-          />
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -412,59 +370,5 @@ const styles = StyleSheet.create({
     color: '#b91c1c',
     fontWeight: '600',
     fontSize: 15,
-  },
-  addRoot: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  addHeader: {
-    paddingHorizontal: 16,
-    paddingBottom: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#e2e8f0',
-  },
-  addCloseRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 4,
-  },
-  addCloseLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#475569',
-  },
-  addTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#0f172a',
-    marginTop: 4,
-  },
-  addSearch: {
-    margin: 16,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    fontSize: 16,
-  },
-  addRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#f1f5f9',
-  },
-  addRowNum: {
-    width: 40,
-    fontWeight: '700',
-    color: '#64748b',
-  },
-  addRowTitle: {
-    flex: 1,
-    fontSize: 16,
-    color: '#0f172a',
   },
 });
