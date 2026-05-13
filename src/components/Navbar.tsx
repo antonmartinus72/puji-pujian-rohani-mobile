@@ -1,7 +1,18 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+
+export interface NavbarProps {
+  songNumber?: number;
+  onMenu: () => void;
+  onPrev: () => void;
+  onNext: () => void;
+  onSearch: () => void;
+  onNumberPress: () => void;
+  canPrev: boolean;
+  canNext: boolean;
+}
 
 export default function Navbar({
   songNumber,
@@ -12,16 +23,19 @@ export default function Navbar({
   onNumberPress,
   canPrev,
   canNext,
-}) {
+}: NavbarProps) {
   const insets = useSafeAreaInsets();
   const iconColor = '#f8fafc';
   const disabledColor = 'rgba(248,250,252,0.35)';
 
   return (
-    <View style={[styles.bar, { paddingTop: Math.max(insets.top, 8) }]}>
+    <View
+      className="flex-row items-center justify-between border-b border-navBorder bg-nav px-1.5 pb-2.5"
+      style={{ paddingTop: Math.max(insets.top, 8) }}
+    >
       <Pressable
         onPress={onMenu}
-        style={styles.iconBtn}
+        className="min-h-[44px] min-w-[44px] items-center justify-center"
         accessibilityLabel="Buka menu"
       >
         <Ionicons name="menu" size={26} color={iconColor} />
@@ -29,7 +43,7 @@ export default function Navbar({
       <Pressable
         onPress={onPrev}
         disabled={!canPrev}
-        style={[styles.iconBtn, !canPrev && styles.disabled]}
+        className="min-h-[44px] min-w-[44px] items-center justify-center"
         accessibilityLabel="Lagu sebelumnya"
       >
         <Ionicons
@@ -40,15 +54,17 @@ export default function Navbar({
       </Pressable>
       <Pressable
         onPress={onNumberPress}
-        style={styles.numberBtn}
+        className="min-w-[56px] rounded-lg bg-slate-600 px-3 py-2"
         accessibilityLabel="Masukkan nomor lagu"
       >
-        <Text style={styles.numberText}>{songNumber ?? '—'}</Text>
+        <Text className="text-center text-lg font-bold text-slate-100">
+          {songNumber ?? '—'}
+        </Text>
       </Pressable>
       <Pressable
         onPress={onNext}
         disabled={!canNext}
-        style={[styles.iconBtn, !canNext && styles.disabled]}
+        className="min-h-[44px] min-w-[44px] items-center justify-center"
         accessibilityLabel="Lagu berikutnya"
       >
         <Ionicons
@@ -59,7 +75,7 @@ export default function Navbar({
       </Pressable>
       <Pressable
         onPress={onSearch}
-        style={styles.iconBtn}
+        className="min-h-[44px] min-w-[44px] items-center justify-center"
         accessibilityLabel="Cari lagu"
       >
         <Ionicons name="search" size={24} color={iconColor} />
@@ -67,38 +83,3 @@ export default function Navbar({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  bar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 6,
-    paddingBottom: 10,
-    backgroundColor: '#1e3a5f',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#0f172a',
-  },
-  iconBtn: {
-    minWidth: 44,
-    minHeight: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  disabled: {
-    opacity: 1,
-  },
-  numberBtn: {
-    minWidth: 56,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: '#334155',
-  },
-  numberText: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#f1f5f9',
-    textAlign: 'center',
-  },
-});

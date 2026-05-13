@@ -6,32 +6,61 @@ import React, {
   useMemo,
   useRef,
   useState,
+  type ReactNode,
 } from 'react';
 import { useSongs } from './SongContext';
 import { KEYS, getItem, setItem } from '../services/storage';
+import type { WorshipSetlist, SetlistSession } from '../types/setlist';
 
-const SetlistContext = createContext(null);
-
-function newSetlistId() {
+function newSetlistId(): string {
   return `setlist_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 9)}`;
 }
 
-export function SetlistProvider({ children }) {
+function isSetlistsPayload(parsed: unknown): parsed is { setlists: WorshipSetlist[] } {
+  if (!parsed || typeof parsed !== 'object') return false;
+  const p = parsed as { setlists?: unknown };
+  return Array.isArray(p.setlists);
+}
+
+export interface SetlistContextValue {
+  setlists: WorshipSetlist[];
+  hydrated: boolean;
+  activeSession: SetlistSession | null;
+  activeSetlistName: string | null;
+  beginSession: (setlistId: string) => boolean;
+  endSession: () => void;
+  sessionNext: () => void;
+  sessionPrev: () => void;
+  canSessionNext: boolean;
+  canSessionPrev: boolean;
+  createSetlist: (name: string) => string | null;
+  renameSetlist: (id: string, name: string) => void;
+  deleteSetlist: (id: string) => void;
+  addSongToSetlist: (setlistId: string, songId: number) => void;
+  removeSongAt: (setlistId: string, index: number) => void;
+  moveSong: (setlistId: string, index: number, delta: number) => void;
+  getSetlist: (id: string | undefined) => WorshipSetlist | null;
+  buildShareText: (setlistId: string) => string;
+}
+
+const SetlistContext = createContext<SetlistContextValue | null>(null);
+
+export function SetlistProvider({ children }: { children: ReactNode }) {
   const { songs, currentSong, goToId } = useSongs();
-  const [setlists, setSetlists] = useState([]);
+  const [setlists, setSetlists] = useState<WorshipSetlist[]>([]);
   const [hydrated, setHydrated] = useState(false);
-  const [activeSession, setActiveSession] = useState(null);
-  const saveTimer = useRef(null);
+  const [activeSession, setActiveSession] = useState<SetlistSession | null>(null);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    void (async () => {
       const raw = await getItem(KEYS.SETLISTS);
       if (cancelled) return;
       if (raw) {
         try {
-          const parsed = JSON.parse(raw);
-          if (parsed.setlists && Array.isArray(parsed.setlists)) {
+          const parsed: unknown = JSON.parse(raw);
+          if (isSetlistsPayload(parsed)) {
             setSetlists(parsed.setlists);
           }
         } catch {
@@ -49,7 +78,7 @@ export function SetlistProvider({ children }) {
     if (!hydrated) return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
-      setItem(KEYS.SETLISTS, JSON.stringify({ setlists }));
+      void setItem(KEYS.SETLISTS, JSON.stringify({ setlists }));
     }, 400);
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
@@ -57,7 +86,8 @@ export function SetlistProvider({ children }) {
   }, [setlists, hydrated]);
 
   const getSetlist = useCallback(
-    (id) => setlists.find((s) => s.id === id) ?? null,
+    (id: string | undefined) =>
+      id ? (setlists.find((s) => s.id === id) ?? null) : null,
     [setlists]
   );
 
@@ -91,7 +121,7 @@ export function SetlistProvider({ children }) {
   }, [currentSong?.id, sessionId, sessionCursor, setlists, endSession]);
 
   const beginSession = useCallback(
-    (setlistId) => {
+    (setlistId: string) => {
       const sl = setlists.find((s) => s.id === setlistId);
       if (!sl || !sl.songs.length) return false;
       setActiveSession({ setlistId, cursor: 0 });
@@ -135,11 +165,11 @@ export function SetlistProvider({ children }) {
     return activeSession.cursor > 0;
   }, [activeSession]);
 
-  const createSetlist = useCallback((name) => {
+  const createSetlist = useCallback((name: string) => {
     const trimmed = (name || '').trim();
     if (!trimmed) return null;
     const id = newSetlistId();
-    const item = {
+    const item: WorshipSetlist = {
       id,
       name: trimmed,
       createdAt: new Date().toISOString(),
@@ -149,7 +179,7 @@ export function SetlistProvider({ children }) {
     return id;
   }, []);
 
-  const renameSetlist = useCallback((id, name) => {
+  const renameSetlist = useCallback((id: string, name: string) => {
     const trimmed = (name || '').trim();
     if (!trimmed) return;
     setSetlists((prev) =>
@@ -157,12 +187,12 @@ export function SetlistProvider({ children }) {
     );
   }, []);
 
-  const deleteSetlist = useCallback((id) => {
+  const deleteSetlist = useCallback((id: string) => {
     setSetlists((prev) => prev.filter((s) => s.id !== id));
     setActiveSession((cur) => (cur?.setlistId === id ? null : cur));
   }, []);
 
-  const addSongToSetlist = useCallback((setlistId, songId) => {
+  const addSongToSetlist = useCallback((setlistId: string, songId: number) => {
     const n = Number(songId);
     if (Number.isNaN(n)) return;
     setSetlists((prev) =>
@@ -174,61 +204,67 @@ export function SetlistProvider({ children }) {
     );
   }, []);
 
-  const removeSongAt = useCallback((setlistId, index) => {
-    setSetlists((prev) => {
-      const mapped = prev.map((s) => {
-        if (s.id !== setlistId) return s;
-        const arr = [...s.songs];
-        arr.splice(index, 1);
-        return { ...s, songs: arr };
-      });
-      queueMicrotask(() => {
-        setActiveSession((cur) => {
-          if (!cur || cur.setlistId !== setlistId) return cur;
-          const sl = mapped.find((x) => x.id === setlistId);
-          if (!sl?.songs.length) return null;
-          let c = cur.cursor;
-          if (index < c) c -= 1;
-          else if (index === c) c = Math.min(c, sl.songs.length - 1);
-          c = Math.max(0, c);
-          const at = sl.songs[c];
-          if (at != null) goToId(at);
-          return { setlistId, cursor: c };
+  const removeSongAt = useCallback(
+    (setlistId: string, index: number) => {
+      setSetlists((prev) => {
+        const mapped = prev.map((s) => {
+          if (s.id !== setlistId) return s;
+          const arr = [...s.songs];
+          arr.splice(index, 1);
+          return { ...s, songs: arr };
         });
+        queueMicrotask(() => {
+          setActiveSession((cur) => {
+            if (!cur || cur.setlistId !== setlistId) return cur;
+            const sl = mapped.find((x) => x.id === setlistId);
+            if (!sl?.songs.length) return null;
+            let c = cur.cursor;
+            if (index < c) c -= 1;
+            else if (index === c) c = Math.min(c, sl.songs.length - 1);
+            c = Math.max(0, c);
+            const at = sl.songs[c];
+            if (at != null) goToId(at);
+            return { setlistId, cursor: c };
+          });
+        });
+        return mapped;
       });
-      return mapped;
-    });
-  }, [goToId]);
+    },
+    [goToId]
+  );
 
-  const moveSong = useCallback((setlistId, index, delta) => {
-    setSetlists((prev) => {
-      const mapped = prev.map((s) => {
-        if (s.id !== setlistId) return s;
-        const j = index + delta;
-        if (j < 0 || j >= s.songs.length) return s;
-        const arr = [...s.songs];
-        const t = arr[index];
-        arr[index] = arr[j];
-        arr[j] = t;
-        return { ...s, songs: arr };
-      });
-      queueMicrotask(() => {
-        setActiveSession((cur) => {
-          if (!cur || cur.setlistId !== setlistId) return cur;
-          let c = cur.cursor;
-          if (c === index) c = index + delta;
-          else if (c === index + delta) c = index;
-          const sl = mapped.find((x) => x.id === setlistId);
-          if (!sl?.songs.length) return null;
-          c = Math.max(0, Math.min(c, sl.songs.length - 1));
-          const at = sl.songs[c];
-          if (at != null) goToId(at);
-          return { setlistId, cursor: c };
+  const moveSong = useCallback(
+    (setlistId: string, index: number, delta: number) => {
+      setSetlists((prev) => {
+        const mapped = prev.map((s) => {
+          if (s.id !== setlistId) return s;
+          const j = index + delta;
+          if (j < 0 || j >= s.songs.length) return s;
+          const arr = [...s.songs];
+          const t = arr[index];
+          arr[index] = arr[j]!;
+          arr[j] = t!;
+          return { ...s, songs: arr };
         });
+        queueMicrotask(() => {
+          setActiveSession((cur) => {
+            if (!cur || cur.setlistId !== setlistId) return cur;
+            let c = cur.cursor;
+            if (c === index) c = index + delta;
+            else if (c === index + delta) c = index;
+            const sl = mapped.find((x) => x.id === setlistId);
+            if (!sl?.songs.length) return null;
+            c = Math.max(0, Math.min(c, sl.songs.length - 1));
+            const at = sl.songs[c];
+            if (at != null) goToId(at);
+            return { setlistId, cursor: c };
+          });
+        });
+        return mapped;
       });
-      return mapped;
-    });
-  }, [goToId]);
+    },
+    [goToId]
+  );
 
   const activeSetlistName = useMemo(() => {
     if (!activeSession) return null;
@@ -236,7 +272,7 @@ export function SetlistProvider({ children }) {
   }, [activeSession, getSetlist]);
 
   const buildShareText = useCallback(
-    (setlistId) => {
+    (setlistId: string) => {
       const sl = setlists.find((s) => s.id === setlistId);
       if (!sl) return '';
       const lines = sl.songs.map((songId, i) => {
@@ -249,7 +285,7 @@ export function SetlistProvider({ children }) {
     [setlists, songs]
   );
 
-  const value = useMemo(
+  const value = useMemo<SetlistContextValue>(
     () => ({
       setlists,
       hydrated,
@@ -297,7 +333,7 @@ export function SetlistProvider({ children }) {
   );
 }
 
-export function useSetlist() {
+export function useSetlist(): SetlistContextValue {
   const ctx = useContext(SetlistContext);
   if (!ctx) throw new Error('useSetlist must be used within SetlistProvider');
   return ctx;

@@ -1,13 +1,15 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const KEYS = {
+export const KEYS = {
   SONGS_DATA: 'songs_data',
   SONGS_VERSION: 'songs_version',
   SETLISTS: 'setlists_data',
   LYRIC_FONT_SCALE: 'lyric_font_scale',
-};
+} as const;
 
-export async function getItem(key) {
+export type StorageKey = (typeof KEYS)[keyof typeof KEYS];
+
+export async function getItem(key: StorageKey): Promise<string | null> {
   try {
     return await AsyncStorage.getItem(key);
   } catch {
@@ -15,7 +17,7 @@ export async function getItem(key) {
   }
 }
 
-export async function setItem(key, value) {
+export async function setItem(key: StorageKey, value: string): Promise<boolean> {
   try {
     await AsyncStorage.setItem(key, value);
     return true;
@@ -24,7 +26,7 @@ export async function setItem(key, value) {
   }
 }
 
-export async function removeItem(key) {
+export async function removeItem(key: StorageKey): Promise<boolean> {
   try {
     await AsyncStorage.removeItem(key);
     return true;
@@ -32,5 +34,3 @@ export async function removeItem(key) {
     return false;
   }
 }
-
-export { KEYS };

@@ -1,3 +1,5 @@
+import './global.css';
+import './src/lib/nativewindSetup';
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -10,8 +12,9 @@ import SongReaderScreen from './src/screens/SongReaderScreen';
 import SongListScreen from './src/screens/SongListScreen';
 import SetlistScreen from './src/screens/SetlistScreen';
 import SetlistDetailScreen from './src/screens/SetlistDetailScreen';
+import type { RootStackParamList } from './src/navigation/types';
 
-const Stack = createNativeStackNavigator();
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
   return (
