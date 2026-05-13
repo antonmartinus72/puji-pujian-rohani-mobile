@@ -36,8 +36,8 @@ export default function SetlistScreen({ navigation }) {
           <Ionicons name="chevron-back" size={22} color="#2563eb" />
           <Text style={styles.back}>Kembali</Text>
         </Pressable>
-        <Text style={styles.title}>Daftar ibadah</Text>
-        <Text style={styles.sub}>Setlist untuk satu sesi ibadah</Text>
+        <Text style={styles.title}>Daftar Setlist</Text>
+        <Text style={styles.sub}>Setlist untuk satu sesi pujian</Text>
       </View>
 
       <Pressable style={styles.primaryBtn} onPress={() => setCreateOpen(true)}>

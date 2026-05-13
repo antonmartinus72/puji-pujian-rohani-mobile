@@ -287,10 +287,6 @@ export default function SongReaderScreen({ navigation }) {
               {currentSong.id}. {currentSong.title}
             </Text>
             <View style={styles.rule} />
-            <Text style={styles.lyricHint}>
-              Ketuk beberapa bagian (verse, chorus, …) untuk memilih · cubit dua
-              jari untuk zoom teks lirik
-            </Text>
             {(currentSong.lyrics || []).map((block, idx) => {
               const sel = selectedSet.has(idx);
               return (
