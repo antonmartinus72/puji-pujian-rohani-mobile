@@ -328,15 +328,15 @@ export default function SongReaderScreen({
           >
             <GestureDetector gesture={pinchZoomLyrics}>
               <View collapsable={false} className="pb-2">
+                <Text className="mb-4 text-xs leading-[17px] text-slate-500">
+                  Ketuk beberapa bagian (verse, chorus, …) untuk memilih. Cubit dua
+                  jari untuk zoom teks lirik. Geser kiri/kanan untuk lagu
+                  berikutnya/sebelumnya.
+                </Text>
                 <Text className="mb-2 text-[22px] font-bold text-slate-900">
                   {currentSong.id}. {currentSong.title}
                 </Text>
                 <View className="mb-3 h-px max-w-[200px] bg-slate-300" />
-                <Text className="mb-4 text-xs leading-[17px] text-slate-500">
-                  Ketuk beberapa bagian (verse, chorus, …) untuk memilih · cubit dua
-                  jari untuk zoom teks lirik · geser kiri/kanan untuk lagu
-                  berikutnya/sebelumnya
-                </Text>
                 {(currentSong.lyrics || []).map((block, idx) => {
                   const sel = selectedSet.has(idx);
                   return (

@@ -31,9 +31,9 @@ export default function SetlistScreen({
           <Ionicons name="chevron-back" size={22} color="#2563eb" />
           <Text className="text-base font-semibold text-blue-600">Kembali</Text>
         </Pressable>
-        <Text className="text-[22px] font-bold text-slate-900">Daftar ibadah</Text>
+        <Text className="text-[22px] font-bold text-slate-900">Daftar Setlist</Text>
         <Text className="mt-1 text-sm text-slate-500">
-          Setlist untuk satu sesi ibadah
+          Setlist untuk satu sesi acara
         </Text>
       </View>
 

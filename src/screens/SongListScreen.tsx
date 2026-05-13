@@ -120,7 +120,7 @@ export default function SongListScreen({
         onChangeText={(t) => setNumQ(t.replace(/[^0-9]/g, ''))}
         placeholder="Nomor lagu…"
         placeholderTextColor="#94a3b8"
-        className="mx-4 mb-3 mt-2 rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-xl text-slate-900"
+        className="mx-4 mb-3 mt-2 rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-base text-slate-900"
         keyboardType="number-pad"
         returnKeyType="search"
         maxLength={8}

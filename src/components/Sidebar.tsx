@@ -155,8 +155,8 @@ export default function Sidebar({
           />
           <MenuRow
             icon="albums-outline"
-            label="Daftar ibadah"
-            subtitle="Setlist worship leader"
+            label="Daftar Setlist"
+            subtitle="Setlist untuk satu sesi acara"
             onPress={() => {
               onClose();
               onOpenSetlists?.();
