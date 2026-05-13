@@ -1,12 +1,12 @@
 import React, { useMemo } from 'react';
-import { Pressable, Text } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 const BASE_LABEL = 16;
 const BASE_LINE = 20;
-const BASE_LINE_HEIGHT = 30;
-/** Jarak vertikal antar bagian (verse / chorus / …) */
-const BASE_SECTION_GAP = 14;
-const BASE_LABEL_MARGIN = 6;
+const BASE_LINE_HEIGHT = 28;
+/** Satu “baris kosong” visual antar bagian (verse / chorus / …) */
+const BASE_SECTION_GAP = 10;
+const BASE_LABEL_MARGIN = 2;
 
 export function formatLyricBlockPlainText(
   label: string | undefined | null,
@@ -44,8 +44,17 @@ export default function LyricBlock({
   const s = fontScale;
   const sectionGap = Math.round(BASE_SECTION_GAP * s);
   const marginBottom = selected && mergeWithNext ? 0 : sectionGap;
-  const paddingTop = selected && mergeWithPrev ? 4 : 8;
-  const paddingBottom = selected && mergeWithNext ? 4 : 8;
+  const paddingTop = selected && mergeWithPrev ? 2 : 4;
+  const paddingBottom = selected && mergeWithNext ? 2 : 4;
+
+  const nonEmptyLines = useMemo(
+    () =>
+      (lines || []).filter((line) => {
+        const t = line != null ? String(line).trim() : '';
+        return t.length > 0;
+      }),
+    [lines]
+  );
 
   const typography = useMemo(
     () => ({
@@ -75,23 +84,34 @@ export default function LyricBlock({
           ? `Bagian lirik ${label}. Ketuk untuk menambah atau menghapus dari pilihan.`
           : 'Bagian lirik. Ketuk untuk menambah atau menghapus dari pilihan.'
       }
-      className="px-1 -mx-1"
-      style={({ pressed }) => [
-        {
-          marginBottom,
-          paddingTop,
-          paddingBottom,
-        },
-        selected ? { backgroundColor: '#dbeafe' } : undefined,
-        pressed && !selected ? { backgroundColor: '#f1f5f9' } : undefined,
-      ]}
+      className="-mx-1"
+      style={{ marginBottom }}
     >
-      {label ? <Text style={typography.label}>{label}</Text> : null}
-      {(lines || []).map((line, i) => (
-        <Text key={i} style={typography.line}>
-          {line}
-        </Text>
-      ))}
+      {({ pressed }) => (
+        <View
+          style={[
+            {
+              paddingTop,
+              paddingBottom,
+              paddingHorizontal: 6,
+              borderRadius: 8,
+              overflow: 'hidden',
+            },
+            selected
+              ? { backgroundColor: '#bfdbfe' }
+              : pressed
+                ? { backgroundColor: '#f1f5f9' }
+                : null,
+          ]}
+        >
+          {label ? <Text style={typography.label}>{label}</Text> : null}
+          {nonEmptyLines.map((line, i) => (
+            <Text key={i} style={typography.line}>
+              {line}
+            </Text>
+          ))}
+        </View>
+      )}
     </Pressable>
   );
 }

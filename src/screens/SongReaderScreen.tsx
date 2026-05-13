@@ -3,9 +3,9 @@ import { Alert, Pressable, Share, Text, View } from 'react-native';
 import { setStringAsync } from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
 import {
-  PinchGestureHandler,
+  Gesture,
+  GestureDetector,
   ScrollView,
-  State,
 } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Navbar from '../components/Navbar';
@@ -90,42 +90,33 @@ export default function SongReaderScreen({
     void setItem(KEYS.LYRIC_FONT_SCALE, String(value));
   }, []);
 
-  const onPinchGestureEvent = useCallback((e: { nativeEvent: { scale: number } }) => {
-    const damped = dampedPinchFactor(e.nativeEvent.scale);
+  const beginPinch = useCallback(() => {
+    setIsPinching(true);
+    pinchOriginScale.current = lyricFontScaleRef.current;
+  }, []);
+
+  const updatePinchScale = useCallback((scale: number) => {
+    const damped = dampedPinchFactor(scale);
     const next = clampFontScale(pinchOriginScale.current * damped);
+    lyricFontScaleRef.current = next;
     setLyricFontScale(next);
   }, []);
 
-  const onPinchHandlerStateChange = useCallback(
-    (e: {
-      nativeEvent: {
-        state: number;
-        oldState: number;
-        scale: number;
-      };
-    }) => {
-      const { state, oldState } = e.nativeEvent;
-      if (state === State.BEGAN) {
-        setIsPinching(true);
-        pinchOriginScale.current = lyricFontScaleRef.current;
-      }
-      if (
-        state === State.END ||
-        state === State.CANCELLED ||
-        state === State.FAILED
-      ) {
-        setIsPinching(false);
-      }
-      if (oldState === State.ACTIVE) {
-        const damped = dampedPinchFactor(e.nativeEvent.scale);
-        const next = clampFontScale(pinchOriginScale.current * damped);
-        setLyricFontScale(next);
-        lyricFontScaleRef.current = next;
-        persistLyricFontScale(next);
-      }
+  const commitPinchScale = useCallback(
+    (scale: number) => {
+      const damped = dampedPinchFactor(scale);
+      const next = clampFontScale(pinchOriginScale.current * damped);
+      setLyricFontScale(next);
+      lyricFontScaleRef.current = next;
+      persistLyricFontScale(next);
     },
     [persistLyricFontScale]
   );
+
+  const endPinchInteraction = useCallback(() => {
+    setIsPinching(false);
+    persistLyricFontScale(lyricFontScaleRef.current);
+  }, [persistLyricFontScale]);
 
   const selectedSet = useMemo(
     () => new Set(selectedLyricIndices),
@@ -207,6 +198,53 @@ export default function SongReaderScreen({
   const onPrev = inSetlist ? sessionPrev : goPrev;
   const onNext = inSetlist ? sessionNext : goNext;
 
+  const swipeToAdjacentSong = useCallback(
+    (translationX: number, velocityX: number) => {
+      const minDistance = 72;
+      const minSpeed = 420;
+      if (translationX <= -minDistance || velocityX <= -minSpeed) {
+        if (canNext) onNext();
+      } else if (translationX >= minDistance || velocityX >= minSpeed) {
+        if (canPrev) onPrev();
+      }
+    },
+    [canNext, canPrev, onNext, onPrev]
+  );
+
+  const swipeBetweenSongs = useMemo(
+    () =>
+      Gesture.Pan()
+        .runOnJS(true)
+        .activeOffsetX([-40, 40])
+        .failOffsetY([-32, 32])
+        .onEnd((e, success) => {
+          if (!success) return;
+          swipeToAdjacentSong(e.translationX, e.velocityX);
+        }),
+    [swipeToAdjacentSong]
+  );
+
+  const pinchZoomLyrics = useMemo(
+    () =>
+      Gesture.Pinch()
+        .runOnJS(true)
+        .onBegin(() => {
+          beginPinch();
+        })
+        .onUpdate((e) => {
+          updatePinchScale(e.scale);
+        })
+        .onEnd((e, success) => {
+          if (success) {
+            commitPinchScale(e.scale);
+          }
+        })
+        .onFinalize(() => {
+          endPinchInteraction();
+        }),
+    [beginPinch, updatePinchScale, commitPinchScale, endPinchInteraction]
+  );
+
   const openSongListSearch = useCallback(() => {
     navigation.navigate('SongList', { variant: 'search' });
   }, [navigation]);
@@ -270,53 +308,55 @@ export default function SongReaderScreen({
         canPrev={canPrev}
         canNext={canNext}
       />
-      <ScrollView
-        ref={scrollRef}
-        className="flex-1"
-        scrollEnabled={!isPinching}
-        contentContainerStyle={[
-          {
-            paddingHorizontal: 20,
-            paddingTop: 20,
-            paddingBottom:
-              insets.bottom + 24 + (selectedLyricIndices.length > 0 ? 88 : 0),
-          },
-        ]}
-        keyboardShouldPersistTaps="handled"
-        nestedScrollEnabled
-      >
-        <PinchGestureHandler
-          simultaneousHandlers={[scrollRef]}
-          onGestureEvent={onPinchGestureEvent}
-          onHandlerStateChange={onPinchHandlerStateChange}
-        >
-          <View collapsable={false} className="pb-2">
-            <Text className="mb-2 text-[22px] font-bold text-slate-900">
-              {currentSong.id}. {currentSong.title}
-            </Text>
-            <View className="mb-3 h-px max-w-[200px] bg-slate-300" />
-            <Text className="mb-4 text-xs leading-[17px] text-slate-500">
-              Ketuk beberapa bagian (verse, chorus, …) untuk memilih · cubit dua
-              jari untuk zoom teks lirik
-            </Text>
-            {(currentSong.lyrics || []).map((block, idx) => {
-              const sel = selectedSet.has(idx);
-              return (
-                <LyricBlock
-                  key={idx}
-                  label={block.label}
-                  lines={block.lines}
-                  fontScale={lyricFontScale}
-                  selected={sel}
-                  mergeWithPrev={sel && selectedSet.has(idx - 1)}
-                  mergeWithNext={sel && selectedSet.has(idx + 1)}
-                  onPress={() => toggleLyricIndex(idx)}
-                />
-              );
-            })}
-          </View>
-        </PinchGestureHandler>
-      </ScrollView>
+      <GestureDetector gesture={swipeBetweenSongs}>
+        <View className="flex-1">
+          <ScrollView
+            ref={scrollRef}
+            className="flex-1"
+            scrollEnabled={!isPinching}
+            removeClippedSubviews={false}
+            contentContainerStyle={[
+              {
+                paddingHorizontal: 20,
+                paddingTop: 20,
+                paddingBottom:
+                  insets.bottom + 24 + (selectedLyricIndices.length > 0 ? 88 : 0),
+              },
+            ]}
+            keyboardShouldPersistTaps="handled"
+            nestedScrollEnabled
+          >
+            <GestureDetector gesture={pinchZoomLyrics}>
+              <View collapsable={false} className="pb-2">
+                <Text className="mb-2 text-[22px] font-bold text-slate-900">
+                  {currentSong.id}. {currentSong.title}
+                </Text>
+                <View className="mb-3 h-px max-w-[200px] bg-slate-300" />
+                <Text className="mb-4 text-xs leading-[17px] text-slate-500">
+                  Ketuk beberapa bagian (verse, chorus, …) untuk memilih · cubit dua
+                  jari untuk zoom teks lirik · geser kiri/kanan untuk lagu
+                  berikutnya/sebelumnya
+                </Text>
+                {(currentSong.lyrics || []).map((block, idx) => {
+                  const sel = selectedSet.has(idx);
+                  return (
+                    <LyricBlock
+                      key={idx}
+                      label={block.label}
+                      lines={block.lines}
+                      fontScale={lyricFontScale}
+                      selected={sel}
+                      mergeWithPrev={sel && selectedSet.has(idx - 1)}
+                      mergeWithNext={sel && selectedSet.has(idx + 1)}
+                      onPress={() => toggleLyricIndex(idx)}
+                    />
+                  );
+                })}
+              </View>
+            </GestureDetector>
+          </ScrollView>
+        </View>
+      </GestureDetector>
 
       {selectedLyricIndices.length > 0 ? (
         <View
