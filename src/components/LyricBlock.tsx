@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text } from 'react-native';
 
 const BASE_LABEL = 16;
 const BASE_LINE = 20;
@@ -8,8 +8,11 @@ const BASE_LINE_HEIGHT = 30;
 const BASE_SECTION_GAP = 14;
 const BASE_LABEL_MARGIN = 6;
 
-export function formatLyricBlockPlainText(label, lines) {
-  const out = [];
+export function formatLyricBlockPlainText(
+  label: string | undefined | null,
+  lines: string[] | undefined
+): string {
+  const out: string[] = [];
   const lab = label != null ? String(label).trim() : '';
   if (lab) out.push(lab);
   for (const line of lines || []) {
@@ -17,6 +20,16 @@ export function formatLyricBlockPlainText(label, lines) {
     if (t) out.push(t);
   }
   return out.join('\n');
+}
+
+export interface LyricBlockProps {
+  label?: string;
+  lines?: string[];
+  fontScale?: number;
+  selected?: boolean;
+  mergeWithPrev?: boolean;
+  mergeWithNext?: boolean;
+  onPress?: () => void;
 }
 
 export default function LyricBlock({
@@ -27,11 +40,10 @@ export default function LyricBlock({
   mergeWithPrev = false,
   mergeWithNext = false,
   onPress,
-}) {
+}: LyricBlockProps) {
   const s = fontScale;
   const sectionGap = Math.round(BASE_SECTION_GAP * s);
-  const marginBottom =
-    selected && mergeWithNext ? 0 : sectionGap;
+  const marginBottom = selected && mergeWithNext ? 0 : sectionGap;
   const paddingTop = selected && mergeWithPrev ? 4 : 8;
   const paddingBottom = selected && mergeWithNext ? 4 : 8;
 
@@ -40,7 +52,7 @@ export default function LyricBlock({
       label: {
         fontSize: Math.round(BASE_LABEL * s),
         lineHeight: Math.round(BASE_LABEL * 1.35 * s),
-        fontWeight: '600',
+        fontWeight: '600' as const,
         color: '#334155',
         marginBottom: Math.round(BASE_LABEL_MARGIN * s),
       },
@@ -63,15 +75,15 @@ export default function LyricBlock({
           ? `Bagian lirik ${label}. Ketuk untuk menambah atau menghapus dari pilihan.`
           : 'Bagian lirik. Ketuk untuk menambah atau menghapus dari pilihan.'
       }
+      className="px-1 -mx-1"
       style={({ pressed }) => [
-        styles.block,
         {
           marginBottom,
           paddingTop,
           paddingBottom,
         },
-        selected && styles.blockSelected,
-        pressed && !selected && styles.blockPressed,
+        selected ? { backgroundColor: '#dbeafe' } : undefined,
+        pressed && !selected ? { backgroundColor: '#f1f5f9' } : undefined,
       ]}
     >
       {label ? <Text style={typography.label}>{label}</Text> : null}
@@ -83,16 +95,3 @@ export default function LyricBlock({
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  block: {
-    paddingHorizontal: 4,
-    marginHorizontal: -4,
-  },
-  blockSelected: {
-    backgroundColor: '#dbeafe',
-  },
-  blockPressed: {
-    backgroundColor: '#f1f5f9',
-  },
-});

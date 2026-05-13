@@ -1,18 +1,20 @@
+import type { Song } from '../types/songs';
+
 /**
  * Pencarian sederhana: judul atau gabungan lirik mengandung query (case-insensitive).
  */
-function normalize(s) {
+function normalize(s: string | undefined | null): string {
   return (s || '').toLowerCase().trim();
 }
 
-function songLyricsText(song) {
+function songLyricsText(song: Song): string {
   if (!song.lyrics || !Array.isArray(song.lyrics)) return '';
   return song.lyrics
     .map((block) => [block.label, ...(block.lines || [])].join(' '))
     .join(' ');
 }
 
-export function searchSongs(songs, query) {
+export function searchSongs(songs: Song[], query: string): Song[] {
   const q = normalize(query);
   if (!q) return songs;
 
@@ -23,18 +25,23 @@ export function searchSongs(songs, query) {
   });
 }
 
+export interface MatchPart {
+  text: string;
+  highlight: boolean;
+}
+
 /**
  * Pecah teks menjadi segmen untuk sorotan (case-insensitive), berurutan tanpa overlap.
- * @param {string} text
- * @param {string} queryNormalized hasil normalize(query)
- * @returns {{ text: string, highlight: boolean }[]}
  */
-export function splitMatchParts(text, queryNormalized) {
+export function splitMatchParts(
+  text: string | null | undefined,
+  queryNormalized: string
+): MatchPart[] {
   const original = text == null ? '' : String(text);
   const q = queryNormalized || '';
   if (!q) return [{ text: original, highlight: false }];
   const lower = original.toLowerCase();
-  const out = [];
+  const out: MatchPart[] = [];
   let i = 0;
   const qlen = q.length;
   while (i < original.length) {
@@ -50,7 +57,7 @@ export function splitMatchParts(text, queryNormalized) {
   return out;
 }
 
-function firstPlainLyricLine(song) {
+function firstPlainLyricLine(song: Song): string | null {
   for (const block of song.lyrics || []) {
     for (const line of block.lines || []) {
       if (line && String(line).trim()) return String(line);
@@ -59,10 +66,17 @@ function firstPlainLyricLine(song) {
   return null;
 }
 
+export interface SearchSnippet {
+  titleParts: MatchPart[];
+  lyricParts: MatchPart[] | null;
+  lyricEllipsLeft: boolean;
+  lyricEllipsRight: boolean;
+}
+
 /**
  * Judul + cuplikan lirik untuk layar hasil pencarian (sorotan di judul dan/atau lirik).
  */
-export function getSearchSnippet(song, queryRaw) {
+export function getSearchSnippet(song: Song, queryRaw: string): SearchSnippet {
   const q = normalize(queryRaw);
   const titleParts = q
     ? splitMatchParts(song.title, q)
@@ -73,7 +87,12 @@ export function getSearchSnippet(song, queryRaw) {
     return {
       titleParts,
       lyricParts: line
-        ? [{ text: line.length > 110 ? `${line.slice(0, 107)}…` : line, highlight: false }]
+        ? [
+            {
+              text: line.length > 110 ? `${line.slice(0, 107)}…` : line,
+              highlight: false,
+            },
+          ]
         : null,
       lyricEllipsLeft: false,
       lyricEllipsRight: false,
@@ -88,7 +107,12 @@ export function getSearchSnippet(song, queryRaw) {
     return {
       titleParts,
       lyricParts: line
-        ? [{ text: line.length > 110 ? `${line.slice(0, 107)}…` : line, highlight: false }]
+        ? [
+            {
+              text: line.length > 110 ? `${line.slice(0, 107)}…` : line,
+              highlight: false,
+            },
+          ]
         : null,
       lyricEllipsLeft: false,
       lyricEllipsRight: false,

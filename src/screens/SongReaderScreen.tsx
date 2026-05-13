@@ -1,12 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Alert,
-  Pressable,
-  Share,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Alert, Pressable, Share, Text, View } from 'react-native';
 import { setStringAsync } from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
 import {
@@ -22,22 +15,24 @@ import UpdateBanner from '../components/UpdateBanner';
 import { useSongs } from '../context/SongContext';
 import { useSetlist } from '../context/SetlistContext';
 import { KEYS, getItem, setItem } from '../services/storage';
+import type { RootStackScreenProps } from '../navigation/types';
 
 const MIN_FONT_SCALE = 0.85;
 const MAX_FONT_SCALE = 2.25;
-/** Semakin kecil, pinch terasa lebih lambat / mudah dikontrol (0.22–0.4 umumnya nyaman). */
 const PINCH_DAMPING = 0.28;
 
-function clampFontScale(v) {
+function clampFontScale(v: number): number {
   return Math.min(MAX_FONT_SCALE, Math.max(MIN_FONT_SCALE, v));
 }
 
-function dampedPinchFactor(rawScale) {
+function dampedPinchFactor(rawScale: number): number {
   const delta = rawScale - 1;
   return 1 + delta * PINCH_DAMPING;
 }
 
-export default function SongReaderScreen({ navigation }) {
+export default function SongReaderScreen({
+  navigation,
+}: RootStackScreenProps<'Reader'>) {
   const {
     songs,
     currentSong,
@@ -60,16 +55,15 @@ export default function SongReaderScreen({ navigation }) {
   const insets = useSafeAreaInsets();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [lyricFontScale, setLyricFontScale] = useState(1);
-  /** Indeks bagian lirik terpilih (multi-select), selalu diurutkan naik */
-  const [selectedLyricIndices, setSelectedLyricIndices] = useState([]);
+  const [selectedLyricIndices, setSelectedLyricIndices] = useState<number[]>([]);
   const [isPinching, setIsPinching] = useState(false);
   const lyricFontScaleRef = useRef(1);
   const pinchOriginScale = useRef(1);
-  const scrollRef = useRef(null);
+  const scrollRef = useRef<ScrollView>(null);
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    void (async () => {
       const raw = await getItem(KEYS.LYRIC_FONT_SCALE);
       if (cancelled || raw == null) return;
       const n = parseFloat(raw);
@@ -92,18 +86,24 @@ export default function SongReaderScreen({ navigation }) {
     setSelectedLyricIndices([]);
   }, [currentSong?.id]);
 
-  const persistLyricFontScale = useCallback((value) => {
-    setItem(KEYS.LYRIC_FONT_SCALE, String(value));
+  const persistLyricFontScale = useCallback((value: number) => {
+    void setItem(KEYS.LYRIC_FONT_SCALE, String(value));
   }, []);
 
-  const onPinchGestureEvent = useCallback((e) => {
+  const onPinchGestureEvent = useCallback((e: { nativeEvent: { scale: number } }) => {
     const damped = dampedPinchFactor(e.nativeEvent.scale);
     const next = clampFontScale(pinchOriginScale.current * damped);
     setLyricFontScale(next);
   }, []);
 
   const onPinchHandlerStateChange = useCallback(
-    (e) => {
+    (e: {
+      nativeEvent: {
+        state: number;
+        oldState: number;
+        scale: number;
+      };
+    }) => {
       const { state, oldState } = e.nativeEvent;
       if (state === State.BEGAN) {
         setIsPinching(true);
@@ -136,7 +136,7 @@ export default function SongReaderScreen({ navigation }) {
     if (!currentSong?.lyrics?.length || selectedLyricIndices.length === 0) {
       return '';
     }
-    const parts = [];
+    const parts: string[] = [];
     for (const idx of selectedLyricIndices) {
       const block = currentSong.lyrics[idx];
       if (!block) continue;
@@ -146,7 +146,6 @@ export default function SongReaderScreen({ navigation }) {
     return parts.join('\n\n');
   }, [currentSong, selectedLyricIndices]);
 
-  /** Judul lagu + lirik terpilih (untuk salin / bagikan) */
   const selectionFullText = useMemo(() => {
     if (!currentSong || !lyricsBodyForSelection.trim()) return '';
     const heading = `${currentSong.id}. ${currentSong.title}`;
@@ -158,7 +157,7 @@ export default function SongReaderScreen({ navigation }) {
     return n > 0 && selectedLyricIndices.length === n;
   }, [currentSong?.lyrics?.length, selectedLyricIndices.length]);
 
-  const toggleLyricIndex = useCallback((idx) => {
+  const toggleLyricIndex = useCallback((idx: number) => {
     setSelectedLyricIndices((prev) => {
       const s = new Set(prev);
       if (s.has(idx)) s.delete(idx);
@@ -218,36 +217,46 @@ export default function SongReaderScreen({ navigation }) {
 
   if (!ready || !currentSong) {
     return (
-      <View style={[styles.center, { paddingBottom: insets.bottom }]}>
-        <Text style={styles.muted}>Memuat lagu…</Text>
+      <View
+        className="flex-1 items-center justify-center bg-slate-50"
+        style={{ paddingBottom: insets.bottom }}
+      >
+        <Text className="text-base text-slate-500">Memuat lagu…</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.root}>
+    <View className="flex-1 bg-slate-50">
       {updateMessage ? (
         <Pressable
-          style={styles.successBanner}
+          className="border-b border-green-300 bg-green-100 px-3.5 py-2.5"
           onPress={() => {
             confirmUpdateSuccess();
           }}
         >
-          <Text style={styles.successText}>{updateMessage}</Text>
-          <Text style={styles.successDismiss}>Tap untuk tutup</Text>
+          <Text className="text-[15px] font-semibold text-green-800">
+            {updateMessage}
+          </Text>
+          <Text className="mt-0.5 text-xs text-green-700">Tap untuk tutup</Text>
         </Pressable>
       ) : null}
       <UpdateBanner />
       {inSetlist && activeSetlistName ? (
-        <View style={styles.setlistBanner}>
-          <View style={styles.setlistBannerText}>
-            <Text style={styles.setlistLabel}>Mode setlist</Text>
-            <Text style={styles.setlistName} numberOfLines={1}>
+        <View className="flex-row items-center justify-between border-b border-emerald-200 bg-emerald-50 px-3.5 py-2">
+          <View className="mr-3 min-w-0 flex-1">
+            <Text className="text-[11px] font-bold uppercase tracking-wide text-emerald-600">
+              Mode setlist
+            </Text>
+            <Text className="mt-0.5 text-[15px] font-semibold text-emerald-800" numberOfLines={1}>
               {activeSetlistName}
             </Text>
           </View>
-          <Pressable style={styles.setlistExit} onPress={endSession}>
-            <Text style={styles.setlistExitText}>Keluar</Text>
+          <Pressable
+            className="rounded-lg border border-emerald-300 bg-white px-3 py-2"
+            onPress={endSession}
+          >
+            <Text className="text-sm font-bold text-emerald-800">Keluar</Text>
           </Pressable>
         </View>
       ) : null}
@@ -263,15 +272,14 @@ export default function SongReaderScreen({ navigation }) {
       />
       <ScrollView
         ref={scrollRef}
-        style={styles.scroll}
+        className="flex-1"
         scrollEnabled={!isPinching}
         contentContainerStyle={[
-          styles.scrollInner,
           {
+            paddingHorizontal: 20,
+            paddingTop: 20,
             paddingBottom:
-              insets.bottom +
-              24 +
-              (selectedLyricIndices.length > 0 ? 88 : 0),
+              insets.bottom + 24 + (selectedLyricIndices.length > 0 ? 88 : 0),
           },
         ]}
         keyboardShouldPersistTaps="handled"
@@ -282,12 +290,12 @@ export default function SongReaderScreen({ navigation }) {
           onGestureEvent={onPinchGestureEvent}
           onHandlerStateChange={onPinchHandlerStateChange}
         >
-          <View collapsable={false} style={styles.pinchContent}>
-            <Text style={styles.songTitle}>
+          <View collapsable={false} className="pb-2">
+            <Text className="mb-2 text-[22px] font-bold text-slate-900">
               {currentSong.id}. {currentSong.title}
             </Text>
-            <View style={styles.rule} />
-            <Text style={styles.lyricHint}>
+            <View className="mb-3 h-px max-w-[200px] bg-slate-300" />
+            <Text className="mb-4 text-xs leading-[17px] text-slate-500">
               Ketuk beberapa bagian (verse, chorus, …) untuk memilih · cubit dua
               jari untuk zoom teks lirik
             </Text>
@@ -312,14 +320,12 @@ export default function SongReaderScreen({ navigation }) {
 
       {selectedLyricIndices.length > 0 ? (
         <View
-          style={[
-            styles.selectionBar,
-            { paddingBottom: Math.max(insets.bottom, 12) },
-          ]}
+          className="absolute bottom-0 left-0 right-0 border-t border-navBorder bg-nav px-3 pt-2.5"
+          style={{ paddingBottom: Math.max(insets.bottom, 12) }}
         >
-          <View style={styles.selectionIconRow}>
+          <View className="flex-row items-center justify-evenly">
             <Pressable
-              style={styles.selectionIconBtn}
+              className="min-h-[48px] min-w-[48px] items-center justify-center px-2"
               onPress={selectAllOrClear}
               accessibilityLabel={
                 allBlocksSelected
@@ -334,21 +340,21 @@ export default function SongReaderScreen({ navigation }) {
               />
             </Pressable>
             <Pressable
-              style={styles.selectionIconBtn}
-              onPress={copySelection}
+              className="min-h-[48px] min-w-[48px] items-center justify-center px-2"
+              onPress={() => void copySelection()}
               accessibilityLabel="Salin teks beserta judul lagu"
             >
               <Ionicons name="copy-outline" size={24} color="#f8fafc" />
             </Pressable>
             <Pressable
-              style={styles.selectionIconBtn}
-              onPress={shareSelection}
+              className="min-h-[48px] min-w-[48px] items-center justify-center px-2"
+              onPress={() => void shareSelection()}
               accessibilityLabel="Bagikan teks beserta judul lagu"
             >
               <Ionicons name="share-outline" size={24} color="#f8fafc" />
             </Pressable>
             <Pressable
-              style={styles.selectionIconBtn}
+              className="min-h-[48px] min-w-[48px] items-center justify-center px-2"
               onPress={() => setSelectedLyricIndices([])}
               accessibilityLabel="Tutup pilihan"
             >
@@ -369,128 +375,3 @@ export default function SongReaderScreen({ navigation }) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: '#f8fafc',
-  },
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#f8fafc',
-  },
-  muted: {
-    fontSize: 16,
-    color: '#64748b',
-  },
-  successBanner: {
-    backgroundColor: '#dcfce7',
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#86efac',
-  },
-  successText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#166534',
-  },
-  successDismiss: {
-    fontSize: 12,
-    color: '#15803d',
-    marginTop: 2,
-  },
-  setlistBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#ecfdf5',
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#a7f3d0',
-  },
-  setlistBannerText: {
-    flex: 1,
-    marginRight: 12,
-  },
-  setlistLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#059669',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  setlistName: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#047857',
-    marginTop: 2,
-  },
-  setlistExit: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#6ee7b7',
-  },
-  setlistExitText: {
-    color: '#047857',
-    fontWeight: '700',
-    fontSize: 14,
-  },
-  scroll: {
-    flex: 1,
-  },
-  scrollInner: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-  },
-  pinchContent: {
-    paddingBottom: 8,
-  },
-  songTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#0f172a',
-    marginBottom: 8,
-  },
-  rule: {
-    height: 1,
-    backgroundColor: '#cbd5e1',
-    marginBottom: 12,
-    maxWidth: 200,
-  },
-  lyricHint: {
-    fontSize: 12,
-    color: '#64748b',
-    lineHeight: 17,
-    marginBottom: 16,
-  },
-  selectionBar: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: '#1e3a5f',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#0f172a',
-    paddingHorizontal: 12,
-    paddingTop: 10,
-  },
-  selectionIconRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-evenly',
-  },
-  selectionIconBtn: {
-    minWidth: 48,
-    minHeight: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 8,
-  },
-});
