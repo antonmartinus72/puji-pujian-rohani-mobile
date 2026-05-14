@@ -94,7 +94,7 @@ export default function LyricBlock({
               paddingTop,
               paddingBottom,
               paddingHorizontal: 6,
-              borderRadius: 8,
+              borderRadius: 0,
               overflow: 'hidden',
             },
             selected
