@@ -51,6 +51,7 @@ export interface SidebarProps {
   onClose: () => void;
   onOpenSongList?: () => void;
   onOpenSetlists?: () => void;
+  onOpenDatabase?: () => void;
 }
 
 export default function Sidebar({
@@ -58,6 +59,7 @@ export default function Sidebar({
   onClose,
   onOpenSongList,
   onOpenSetlists,
+  onOpenDatabase,
 }: SidebarProps) {
   const insets = useSafeAreaInsets();
   const [modalShown, setModalShown] = useState(false);
@@ -160,6 +162,15 @@ export default function Sidebar({
             onPress={() => {
               onClose();
               onOpenSetlists?.();
+            }}
+          />
+          <MenuRow
+            icon="server-outline"
+            label="Database"
+            subtitle="Sumber data lagu dan pembaruan GitHub"
+            onPress={() => {
+              onClose();
+              onOpenDatabase?.();
             }}
           />
         </Animated.View>

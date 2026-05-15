@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
-import { downloadUpdate } from '../services/updater';
 import { useSongs } from '../context/SongContext';
 
 export default function UpdateBanner() {
   const {
     pendingUpdate,
     dismissUpdateBanner,
-    applyPayload,
+    downloadActiveUpdate,
     setUpdateMessage,
   } = useSongs();
   const [loading, setLoading] = useState(false);
@@ -23,8 +22,7 @@ export default function UpdateBanner() {
     setError(null);
     setLoading(true);
     try {
-      const data = await downloadUpdate(pendingUpdate);
-      applyPayload(data);
+      await downloadActiveUpdate(pendingUpdate);
       dismissUpdateBanner();
       setUpdateMessage('Berhasil diperbarui!');
     } catch (e) {

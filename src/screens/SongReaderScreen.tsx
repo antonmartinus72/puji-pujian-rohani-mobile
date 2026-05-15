@@ -411,6 +411,7 @@ export default function SongReaderScreen({
           navigation.navigate('SongList', { variant: 'browse' })
         }
         onOpenSetlists={() => navigation.navigate('Setlists')}
+        onOpenDatabase={() => navigation.navigate('Database')}
       />
     </View>
   );

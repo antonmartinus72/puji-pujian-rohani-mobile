@@ -9,7 +9,7 @@ import React, {
   type ReactNode,
 } from 'react';
 import { useSongs } from './SongContext';
-import { KEYS, getItem, setItem } from '../services/storage';
+import { dbSetlistsKey, getDynamicItem, setDynamicItem } from '../services/storage';
 import type { WorshipSetlist, SetlistSession } from '../types/setlist';
 
 function newSetlistId(): string {
@@ -46,44 +46,74 @@ export interface SetlistContextValue {
 const SetlistContext = createContext<SetlistContextValue | null>(null);
 
 export function SetlistProvider({ children }: { children: ReactNode }) {
-  const { songs, currentSong, goToId } = useSongs();
+  const { songs, currentSong, goToId, activeProfile, databaseSwitchToken } =
+    useSongs();
   const [setlists, setSetlists] = useState<WorshipSetlist[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [activeSession, setActiveSession] = useState<SetlistSession | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dbIdRef = useRef(activeProfile.id);
+  const setlistsRef = useRef(setlists);
+  setlistsRef.current = setlists;
+
+  const persistSetlists = useCallback(
+    async (dbId: string, list: WorshipSetlist[]) => {
+      await setDynamicItem(dbSetlistsKey(dbId), JSON.stringify({ setlists: list }));
+    },
+    []
+  );
+
+  const loadSetlistsForDb = useCallback(async (dbId: string) => {
+    const raw = await getDynamicItem(dbSetlistsKey(dbId));
+    if (raw) {
+      try {
+        const parsed: unknown = JSON.parse(raw);
+        if (isSetlistsPayload(parsed)) {
+          setSetlists(parsed.setlists);
+          return;
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+    setSetlists([]);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
+    const prevId = dbIdRef.current;
     void (async () => {
-      const raw = await getItem(KEYS.SETLISTS);
-      if (cancelled) return;
-      if (raw) {
-        try {
-          const parsed: unknown = JSON.parse(raw);
-          if (isSetlistsPayload(parsed)) {
-            setSetlists(parsed.setlists);
-          }
-        } catch {
-          /* ignore */
-        }
+      if (hydrated && prevId !== activeProfile.id) {
+        await persistSetlists(prevId, setlistsRef.current);
       }
-      setHydrated(true);
+      dbIdRef.current = activeProfile.id;
+      await loadSetlistsForDb(activeProfile.id);
+      if (!cancelled) {
+        setHydrated(true);
+        setActiveSession(null);
+      }
     })();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [
+    activeProfile.id,
+    databaseSwitchToken,
+    loadSetlistsForDb,
+    hydrated,
+    persistSetlists,
+  ]);
 
   useEffect(() => {
     if (!hydrated) return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
-      void setItem(KEYS.SETLISTS, JSON.stringify({ setlists }));
+      void persistSetlists(activeProfile.id, setlists);
     }, 400);
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
-  }, [setlists, hydrated]);
+  }, [setlists, hydrated, activeProfile.id, persistSetlists]);
 
   const getSetlist = useCallback(
     (id: string | undefined) =>
