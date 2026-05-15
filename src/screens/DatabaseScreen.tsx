@@ -1,7 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
   Modal,
   Pressable,
   ScrollView,
@@ -11,115 +9,17 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import ConfirmModal from '../components/ConfirmModal';
+import DatabaseProfileAccordion from '../components/DatabaseProfileAccordion';
+import { useTheme } from '../context/ThemeContext';
+import { useThemeColors } from '../hooks/useThemeColors';
 import { useSongs } from '../context/SongContext';
+import { useUpdateModal } from '../context/UpdateModalContext';
 import type { DatabaseProfile } from '../services/databaseRegistry';
-import {
-  checkForUpdate,
-  downloadUpdate,
-  fetchRemoteVersion,
-  probeGithubRepo,
-} from '../services/updater';
-import { formatRepoSummary } from '../utils/githubUrls';
+import { checkForUpdate, fetchRemoteVersion, probeGithubRepo } from '../services/updater';
+import { showError, showInfo, showSuccess } from '../services/toast';
 import type { RootStackScreenProps } from '../navigation/types';
-
-function ActionButton({
-  label,
-  onPress,
-  loading,
-  variant = 'primary',
-}: {
-  label: string;
-  onPress: () => void;
-  loading?: boolean;
-  variant?: 'primary' | 'secondary' | 'danger';
-}) {
-  const bg =
-    variant === 'danger'
-      ? 'bg-red-600'
-      : variant === 'secondary'
-        ? 'bg-slate-200'
-        : 'bg-nav';
-  const text =
-    variant === 'secondary' ? 'text-slate-800' : 'text-white';
-  return (
-    <Pressable
-      onPress={onPress}
-      disabled={loading}
-      className={`min-h-[40px] flex-1 items-center justify-center rounded-lg px-3 py-2.5 ${bg}`}
-    >
-      {loading ? (
-        <ActivityIndicator color={variant === 'secondary' ? '#334155' : '#fff'} />
-      ) : (
-        <Text className={`text-center text-sm font-bold ${text}`}>{label}</Text>
-      )}
-    </Pressable>
-  );
-}
-
-function ProfileCard({
-  profile,
-  isActive,
-  onSelect,
-  onCheck,
-  onDownload,
-  onDelete,
-  busy,
-}: {
-  profile: DatabaseProfile;
-  isActive: boolean;
-  onSelect: () => void;
-  onCheck: () => void;
-  onDownload: () => void;
-  onDelete?: () => void;
-  busy: boolean;
-}) {
-  return (
-    <View
-      className={`mb-3 rounded-xl border p-4 ${
-        isActive ? 'border-blue-500 bg-blue-50' : 'border-slate-200 bg-white'
-      }`}
-    >
-      <Pressable onPress={onSelect} className="mb-3">
-        <View className="flex-row items-center gap-2">
-          <Ionicons
-            name={isActive ? 'radio-button-on' : 'radio-button-off'}
-            size={22}
-            color={isActive ? '#2563eb' : '#94a3b8'}
-          />
-          <Text className="flex-1 text-[17px] font-semibold text-slate-900">
-            {profile.name}
-          </Text>
-          {isActive ? (
-            <View className="rounded-md bg-blue-600 px-2 py-0.5">
-              <Text className="text-xs font-bold text-white">Aktif</Text>
-            </View>
-          ) : null}
-        </View>
-        <Text className="mt-1 text-sm text-slate-500">
-          {formatRepoSummary(profile.github)}
-        </Text>
-      </Pressable>
-      <View className="flex-row gap-2">
-        <ActionButton
-          label="Periksa"
-          variant="secondary"
-          loading={busy}
-          onPress={onCheck}
-        />
-        <ActionButton label="Unduh" loading={busy} onPress={onDownload} />
-        {onDelete ? (
-          <Pressable
-            onPress={onDelete}
-            disabled={busy}
-            className="items-center justify-center rounded-lg bg-red-50 px-3 py-2.5"
-          >
-            <Ionicons name="trash-outline" size={20} color="#dc2626" />
-          </Pressable>
-        ) : null}
-      </View>
-    </View>
-  );
-}
+import { formatRepoSummary } from '../utils/githubUrls';
 
 export default function DatabaseScreen({
   navigation,
@@ -136,24 +36,35 @@ export default function DatabaseScreen({
     removeDatabase,
     resetDefaultToBundled,
     refreshRegistry,
-    applyPayload,
-    checkActiveUpdate,
   } = useSongs();
+  const { openUpdateModal } = useUpdateModal();
+  const { isDark } = useTheme();
+  const colors = useThemeColors();
 
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [confirm, setConfirm] = useState<{
+    title: string;
+    message: string;
+    confirmLabel: string;
+    destructive?: boolean;
+    onConfirm: () => void;
+  } | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [newName, setNewName] = useState('');
   const [newUser, setNewUser] = useState('');
   const [newRepo, setNewRepo] = useState('');
   const [newBranch, setNewBranch] = useState('main');
-  const [defaultUser, setDefaultUser] = useState(activeProfile.github.username);
-  const [defaultRepo, setDefaultRepo] = useState(activeProfile.github.repo);
-  const [defaultBranch, setDefaultBranch] = useState(activeProfile.github.branch);
+  const [defaultUser, setDefaultUser] = useState('');
+  const [defaultRepo, setDefaultRepo] = useState('');
+  const [defaultBranch, setDefaultBranch] = useState('main');
+
+  const sortedProfiles = [...profiles].sort((a, b) => {
+    if (a.kind === 'default') return -1;
+    if (b.kind === 'default') return 1;
+    return a.name.localeCompare(b.name);
+  });
 
   const defaultProfile = profiles.find((p) => p.kind === 'default');
-  const customProfiles = profiles.filter((p) => p.kind === 'custom');
 
   useEffect(() => {
     if (!defaultProfile) return;
@@ -166,48 +77,45 @@ export default function DatabaseScreen({
     defaultProfile?.github.branch,
   ]);
 
-  const runForProfile = useCallback(
-    async (profile: DatabaseProfile, action: 'check' | 'download') => {
+  const handleCheck = useCallback(
+    async (profile: DatabaseProfile) => {
       setBusyId(profile.id);
-      setError(null);
-      setMessage(null);
       try {
-        if (action === 'check') {
-          const result = await checkForUpdate(profile);
-          if (result.hasUpdate) {
-            setMessage(
-              `Pembaruan tersedia: v${result.remoteVersion.version}${
-                result.remoteVersion.changelog
-                  ? ` — ${result.remoteVersion.changelog}`
-                  : ''
-              }`
-            );
-          } else {
-            setMessage('Sudah versi terbaru.');
-          }
+        const result = await checkForUpdate(profile);
+        if (result.hasUpdate && result.remoteVersion) {
+          showInfo(
+            `Pembaruan tersedia: v${result.remoteVersion.version}`,
+            result.remoteVersion.changelog
+          );
+          openUpdateModal(profile, result.remoteVersion);
         } else {
-          const remote = await fetchRemoteVersion(profile);
-          const data = await downloadUpdate(profile, remote);
-          if (activeProfile.id === profile.id) {
-            applyPayload(data);
-          }
-          setMessage(`Berhasil mengunduh v${remote.version}.`);
-          if (activeProfile.id === profile.id) {
-            void checkActiveUpdate();
-          }
+          showSuccess('Sudah versi terbaru.');
         }
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Operasi gagal.');
+        showError(e instanceof Error ? e.message : 'Gagal memeriksa pembaruan.');
       } finally {
         setBusyId(null);
       }
     },
-    [activeProfile.id, applyPayload, checkActiveUpdate]
+    [openUpdateModal]
+  );
+
+  const handleDownload = useCallback(
+    async (profile: DatabaseProfile) => {
+      setBusyId(profile.id);
+      try {
+        const remote = await fetchRemoteVersion(profile);
+        openUpdateModal(profile, remote);
+      } catch (e) {
+        showError(e instanceof Error ? e.message : 'Gagal mengambil data dari GitHub.');
+      } finally {
+        setBusyId(null);
+      }
+    },
+    [openUpdateModal]
   );
 
   async function saveDefaultRepo() {
-    setError(null);
-    setMessage(null);
     try {
       await updateDefaultRepo({
         username: defaultUser.trim(),
@@ -215,9 +123,9 @@ export default function DatabaseScreen({
         branch: defaultBranch.trim() || 'main',
       });
       await refreshRegistry();
-      setMessage('Repositori default disimpan.');
+      showSuccess('Repositori default disimpan.');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Gagal menyimpan.');
+      showError(e instanceof Error ? e.message : 'Gagal menyimpan.');
     }
   }
 
@@ -227,11 +135,10 @@ export default function DatabaseScreen({
     const repo = newRepo.trim();
     const branch = newBranch.trim() || 'main';
     if (!name || !username || !repo) {
-      setError('Nama, username, dan repo wajib diisi.');
+      showError('Nama, username, dan repo wajib diisi.');
       return;
     }
     setBusyId('new');
-    setError(null);
     try {
       const github = { username, repo, branch };
       const tempProfile: DatabaseProfile = {
@@ -248,82 +155,82 @@ export default function DatabaseScreen({
       setNewUser('');
       setNewRepo('');
       setNewBranch('main');
-      setMessage(`Database "${name}" ditambahkan.`);
+      showSuccess(`Database "${name}" ditambahkan.`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Gagal menambahkan database.');
+      showError(e instanceof Error ? e.message : 'Gagal menambahkan database.');
     } finally {
       setBusyId(null);
     }
   }
 
   function confirmDelete(profile: DatabaseProfile) {
-    Alert.alert(
-      'Hapus database',
-      `Hapus "${profile.name}" dan semua data cache-nya?`,
-      [
-        { text: 'Batal', style: 'cancel' },
-        {
-          text: 'Hapus',
-          style: 'destructive',
-          onPress: () => {
-            void (async () => {
-              setBusyId(profile.id);
-              try {
-                await removeDatabase(profile.id);
-                await refreshRegistry();
-                setMessage(`"${profile.name}" dihapus.`);
-              } catch (e) {
-                setError(e instanceof Error ? e.message : 'Gagal menghapus.');
-              } finally {
-                setBusyId(null);
-              }
-            })();
-          },
-        },
-      ]
-    );
+    setConfirm({
+      title: 'Hapus database',
+      message: `Hapus "${profile.name}" dan semua data cache-nya?`,
+      confirmLabel: 'Hapus',
+      destructive: true,
+      onConfirm: () => {
+        setConfirm(null);
+        void (async () => {
+          setBusyId(profile.id);
+          try {
+            await removeDatabase(profile.id);
+            await refreshRegistry();
+            showSuccess(`"${profile.name}" dihapus.`);
+          } catch (e) {
+            showError(e instanceof Error ? e.message : 'Gagal menghapus.');
+          } finally {
+            setBusyId(null);
+          }
+        })();
+      },
+    });
   }
 
   function confirmResetDefault() {
-    Alert.alert(
-      'Reset database bawaan',
-      'Kembali ke data lagu yang disertakan aplikasi? Unduhan dari GitHub untuk database bawaan akan dihapus.',
-      [
-        { text: 'Batal', style: 'cancel' },
-        {
-          text: 'Reset',
-          style: 'destructive',
-          onPress: () => {
-            void (async () => {
-              setBusyId('default');
-              try {
-                await resetDefaultToBundled();
-                setMessage('Database bawaan dikembalikan ke data aplikasi.');
-              } catch (e) {
-                setError(e instanceof Error ? e.message : 'Gagal reset.');
-              } finally {
-                setBusyId(null);
-              }
-            })();
-          },
-        },
-      ]
-    );
+    setConfirm({
+      title: 'Reset database bawaan',
+      message:
+        'Kembali ke data lagu yang disertakan aplikasi? Unduhan dari GitHub untuk database bawaan akan dihapus.',
+      confirmLabel: 'Reset',
+      destructive: true,
+      onConfirm: () => {
+        setConfirm(null);
+        void (async () => {
+          setBusyId('default');
+          try {
+            await resetDefaultToBundled();
+            showSuccess('Database bawaan dikembalikan ke data aplikasi.');
+          } catch (e) {
+            showError(e instanceof Error ? e.message : 'Gagal reset.');
+          } finally {
+            setBusyId(null);
+          }
+        })();
+      },
+    });
   }
 
   return (
-    <View className="flex-1 bg-slate-50" style={{ paddingTop: insets.top }}>
-      <View className="border-b border-slate-200 bg-white px-4 pb-3">
+    <View
+      className="flex-1 bg-slate-50 dark:bg-slate-900"
+      style={{ paddingTop: insets.top }}
+    >
+      <View className="border-b border-slate-200 bg-white px-4 pb-3 dark:border-slate-700 dark:bg-slate-800">
         <Pressable
           onPress={() => navigation.goBack()}
           hitSlop={10}
           className="mb-2 flex-row items-center gap-0.5"
         >
           <Ionicons name="chevron-back" size={22} color="#2563eb" />
-          <Text className="text-base font-semibold text-blue-600">Kembali</Text>
+          <Text className="text-base font-semibold text-blue-600 dark:text-blue-400">
+            Kembali
+          </Text>
         </Pressable>
-        <Text className="text-[22px] font-bold text-slate-900">Database</Text>
-        <Text className="mt-1 text-sm text-slate-500">
+        <Text className="text-[22px] font-bold text-slate-900 dark:text-slate-100">
+          Database
+        </Text>
+        <Text className="mt-1 text-sm text-slate-500 dark:text-slate-400">
           Kelola sumber data lagu dan pembaruan dari GitHub
         </Text>
       </View>
@@ -335,126 +242,28 @@ export default function DatabaseScreen({
           paddingBottom: insets.bottom + 24,
         }}
       >
-        <View className="mb-5 rounded-xl border border-slate-200 bg-white p-4">
-          <Text className="text-xs font-bold uppercase tracking-wide text-slate-500">
+        <View className="mb-5 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
+          <Text className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
             Ringkasan
           </Text>
-          <Text className="mt-2 text-lg font-bold text-slate-900">
+          <Text className="mt-2 text-lg font-bold text-slate-900 dark:text-slate-100">
             {activeProfile.name}
           </Text>
-          <Text className="mt-1 text-sm text-slate-600">
+          <Text className="mt-1 text-sm text-slate-600 dark:text-slate-300">
             {songs.length} lagu · v{meta.version}
             {meta.updatedAt ? ` · ${meta.updatedAt}` : ''}
           </Text>
-          <Text className="mt-1 text-sm text-slate-500">
+          <Text className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             {formatRepoSummary(activeProfile.github)}
           </Text>
         </View>
 
-        {message ? (
-          <View className="mb-4 rounded-lg bg-emerald-50 px-3 py-2.5">
-            <Text className="text-sm text-emerald-800">{message}</Text>
-          </View>
-        ) : null}
-        {error ? (
-          <View className="mb-4 rounded-lg bg-red-50 px-3 py-2.5">
-            <Text className="text-sm text-red-700">{error}</Text>
-          </View>
-        ) : null}
-
-        <Text className="mb-3 text-lg font-bold text-slate-900">Pengaturan</Text>
-
-        {defaultProfile ? (
-          <View className="mb-5 rounded-xl border border-slate-200 bg-white p-4">
-            <Text className="text-base font-bold text-slate-900">
-              Database bawaan
-            </Text>
-            <Text className="mt-1 text-sm text-slate-500">
-              Data aplikasi atau unduhan dari repositori resmi
-            </Text>
-
-            <Text className="mb-1 mt-4 text-xs font-semibold text-slate-600">
-              GitHub username
-            </Text>
-            <TextInput
-              className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-base text-slate-900"
-              value={defaultUser}
-              onChangeText={setDefaultUser}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-            <Text className="mb-1 mt-3 text-xs font-semibold text-slate-600">
-              Repository
-            </Text>
-            <TextInput
-              className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-base text-slate-900"
-              value={defaultRepo}
-              onChangeText={setDefaultRepo}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-            <Text className="mb-1 mt-3 text-xs font-semibold text-slate-600">
-              Branch
-            </Text>
-            <TextInput
-              className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-base text-slate-900"
-              value={defaultBranch}
-              onChangeText={setDefaultBranch}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-
-            <Pressable
-              onPress={() => void saveDefaultRepo()}
-              className="mt-3 items-center rounded-lg bg-slate-800 py-2.5"
-            >
-              <Text className="font-bold text-white">Simpan repositori</Text>
-            </Pressable>
-
-            <View className="mt-4 flex-row gap-2">
-              <ActionButton
-                label="Periksa pembaruan"
-                variant="secondary"
-                loading={busyId === defaultProfile.id}
-                onPress={() => void runForProfile(defaultProfile, 'check')}
-              />
-              <ActionButton
-                label="Unduh pembaruan"
-                loading={busyId === defaultProfile.id}
-                onPress={() => void runForProfile(defaultProfile, 'download')}
-              />
-            </View>
-
-            <Pressable
-              onPress={confirmResetDefault}
-              className="mt-3 items-center rounded-lg border border-red-200 bg-red-50 py-2.5"
-              disabled={busyId === 'default'}
-            >
-              <Text className="font-semibold text-red-700">
-                Reset ke data bawaan aplikasi
-              </Text>
-            </Pressable>
-
-            {activeProfile.id !== defaultProfile.id ? (
-              <Pressable
-                onPress={() => void switchDatabase(defaultProfile.id)}
-                className="mt-3 items-center rounded-lg border border-blue-200 bg-blue-50 py-2.5"
-              >
-                <Text className="font-semibold text-blue-700">
-                  Gunakan database bawaan
-                </Text>
-              </Pressable>
-            ) : null}
-          </View>
-        ) : null}
-
         <View className="mb-3 flex-row items-center justify-between">
-          <Text className="text-base font-bold text-slate-900">Database lain</Text>
+          <Text className="text-lg font-bold text-slate-900 dark:text-slate-100">
+            Kelola database
+          </Text>
           <Pressable
-            onPress={() => {
-              setAddOpen(true);
-              setError(null);
-            }}
+            onPress={() => setAddOpen(true)}
             className="flex-row items-center gap-1 rounded-lg bg-nav px-3 py-2"
           >
             <Ionicons name="add" size={18} color="#fff" />
@@ -462,25 +271,55 @@ export default function DatabaseScreen({
           </Pressable>
         </View>
 
-        {customProfiles.length === 0 ? (
-          <Text className="mb-4 text-sm text-slate-500">
-            Belum ada database tambahan. Tambahkan repositori GitHub publik dengan
-            songs.json dan version.json.
-          </Text>
-        ) : (
-          customProfiles.map((profile) => (
-            <ProfileCard
-              key={profile.id}
-              profile={profile}
-              isActive={activeProfile.id === profile.id}
-              onSelect={() => void switchDatabase(profile.id)}
-              onCheck={() => void runForProfile(profile, 'check')}
-              onDownload={() => void runForProfile(profile, 'download')}
-              onDelete={() => confirmDelete(profile)}
-              busy={busyId === profile.id}
-            />
-          ))
-        )}
+        {sortedProfiles.map((profile) => (
+          <DatabaseProfileAccordion
+            key={profile.id}
+            profile={profile}
+            isActive={activeProfile.id === profile.id}
+            busy={busyId === profile.id}
+            songCount={
+              activeProfile.id === profile.id ? songs.length : undefined
+            }
+            version={activeProfile.id === profile.id ? meta.version : undefined}
+            updatedAt={
+              activeProfile.id === profile.id ? meta.updatedAt : undefined
+            }
+            onCheck={() => void handleCheck(profile)}
+            onDownload={() => void handleDownload(profile)}
+            onActivate={() => {
+              void (async () => {
+                setBusyId(profile.id);
+                try {
+                  await switchDatabase(profile.id);
+                  showSuccess('Database diaktifkan.');
+                } catch (e) {
+                  showError(e instanceof Error ? e.message : 'Gagal mengaktifkan.');
+                } finally {
+                  setBusyId(null);
+                }
+              })();
+            }}
+            onDelete={
+              profile.kind === 'custom'
+                ? () => confirmDelete(profile)
+                : undefined
+            }
+            defaultRepo={
+              profile.kind === 'default'
+                ? {
+                    username: defaultUser,
+                    repo: defaultRepo,
+                    branch: defaultBranch,
+                    onUsernameChange: setDefaultUser,
+                    onRepoChange: setDefaultRepo,
+                    onBranchChange: setDefaultBranch,
+                    onSaveRepo: () => void saveDefaultRepo(),
+                    onResetBundled: confirmResetDefault,
+                  }
+                : undefined
+            }
+          />
+        ))}
       </ScrollView>
 
       <Modal
@@ -489,64 +328,88 @@ export default function DatabaseScreen({
         animationType="fade"
         onRequestClose={() => setAddOpen(false)}
       >
+        <View className={isDark ? 'dark flex-1' : 'flex-1'}>
         <Pressable
-          className="flex-1 justify-center bg-black/45 px-5"
+          className="flex-1 justify-center px-5"
+          style={{ backgroundColor: 'rgba(0,0,0,0.45)' }}
           onPress={() => setAddOpen(false)}
         >
           <Pressable
-            className="rounded-2xl bg-white p-5"
+            className="rounded-2xl border p-5"
+            style={{ backgroundColor: colors.card, borderColor: colors.border }}
             onPress={(e) => e.stopPropagation()}
           >
-            <Text className="mb-4 text-lg font-bold text-slate-900">
+            <Text className="mb-4 text-lg font-bold text-slate-900 dark:text-slate-100">
               Tambah database
             </Text>
-            <Text className="mb-1 text-xs font-semibold text-slate-600">Nama</Text>
+            <Text className="mb-1 text-xs font-semibold text-slate-600 dark:text-slate-400">
+              Nama
+            </Text>
             <TextInput
-              className="mb-3 rounded-lg border border-slate-200 px-3 py-2.5"
+              className="mb-3 rounded-lg border border-slate-200 px-3 py-2.5 text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
               placeholder="Mis. Gereja XYZ"
+              placeholderTextColor="#94a3b8"
               value={newName}
               onChangeText={setNewName}
             />
-            <Text className="mb-1 text-xs font-semibold text-slate-600">
+            <Text className="mb-1 text-xs font-semibold text-slate-600 dark:text-slate-400">
               GitHub username
             </Text>
             <TextInput
-              className="mb-3 rounded-lg border border-slate-200 px-3 py-2.5"
+              className="mb-3 rounded-lg border border-slate-200 px-3 py-2.5 text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
               value={newUser}
               onChangeText={setNewUser}
               autoCapitalize="none"
             />
-            <Text className="mb-1 text-xs font-semibold text-slate-600">
+            <Text className="mb-1 text-xs font-semibold text-slate-600 dark:text-slate-400">
               Repository
             </Text>
             <TextInput
-              className="mb-3 rounded-lg border border-slate-200 px-3 py-2.5"
+              className="mb-3 rounded-lg border border-slate-200 px-3 py-2.5 text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
               value={newRepo}
               onChangeText={setNewRepo}
               autoCapitalize="none"
             />
-            <Text className="mb-1 text-xs font-semibold text-slate-600">Branch</Text>
+            <Text className="mb-1 text-xs font-semibold text-slate-600 dark:text-slate-400">
+              Branch
+            </Text>
             <TextInput
-              className="mb-4 rounded-lg border border-slate-200 px-3 py-2.5"
+              className="mb-4 rounded-lg border border-slate-200 px-3 py-2.5 text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
               value={newBranch}
               onChangeText={setNewBranch}
               autoCapitalize="none"
             />
             <View className="flex-row gap-2">
-              <ActionButton
-                label="Batal"
-                variant="secondary"
+              <Pressable
                 onPress={() => setAddOpen(false)}
-              />
-              <ActionButton
-                label="Simpan"
-                loading={busyId === 'new'}
+                className="flex-1 items-center rounded-lg bg-slate-200 py-2.5 dark:bg-slate-700"
+              >
+                <Text className="font-bold text-slate-800 dark:text-slate-200">
+                  Batal
+                </Text>
+              </Pressable>
+              <Pressable
                 onPress={() => void submitAdd()}
-              />
+                disabled={busyId === 'new'}
+                className="flex-1 items-center rounded-lg bg-nav py-2.5"
+              >
+                <Text className="font-bold text-white">Simpan</Text>
+              </Pressable>
             </View>
           </Pressable>
         </Pressable>
+        </View>
       </Modal>
+
+      <ConfirmModal
+        visible={confirm != null}
+        title={confirm?.title ?? ''}
+        message={confirm?.message ?? ''}
+        confirmLabel={confirm?.confirmLabel}
+        destructive={confirm?.destructive}
+        onConfirm={() => confirm?.onConfirm()}
+        onCancel={() => setConfirm(null)}
+      />
     </View>
   );
 }

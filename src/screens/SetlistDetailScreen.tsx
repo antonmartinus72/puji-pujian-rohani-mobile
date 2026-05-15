@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSongs } from '../context/SongContext';
 import { useSetlist } from '../context/SetlistContext';
 import type { RootStackScreenProps } from '../navigation/types';
+import { useThemeColors } from '../hooks/useThemeColors';
 
 export default function SetlistDetailScreen({
   navigation,
@@ -20,6 +21,7 @@ export default function SetlistDetailScreen({
 }: RootStackScreenProps<'SetlistDetail'>) {
   const { setlistId } = route.params;
   const insets = useSafeAreaInsets();
+  const colors = useThemeColors();
   const { songs } = useSongs();
   const {
     getSetlist,
@@ -40,8 +42,11 @@ export default function SetlistDetailScreen({
 
   if (!setlistId || !setlist) {
     return (
-      <View className="flex-1 bg-slate-50" style={{ paddingTop: insets.top }}>
-        <Text className="mt-10 text-center text-base text-slate-500">
+      <View
+        className="flex-1 bg-slate-50 dark:bg-slate-900"
+        style={{ paddingTop: insets.top }}
+      >
+        <Text className="mt-10 text-center text-base text-slate-500 dark:text-slate-400">
           Setlist tidak ditemukan.
         </Text>
         <Pressable onPress={() => navigation.goBack()}>
@@ -98,25 +103,27 @@ export default function SetlistDetailScreen({
   });
 
   return (
-    <View className="flex-1 bg-slate-50" style={{ paddingTop: insets.top }}>
-      <View className="border-b border-slate-200 bg-white px-4 pb-3">
+    <View className="flex-1 bg-slate-50 dark:bg-slate-900" style={{ paddingTop: insets.top }}>
+      <View className="border-b border-slate-200 bg-white px-4 pb-3 dark:border-slate-700 dark:bg-slate-800">
         <Pressable
           onPress={() => navigation.goBack()}
           hitSlop={10}
           className="mb-2.5 flex-row items-center gap-0.5"
         >
           <Ionicons name="chevron-back" size={22} color="#2563eb" />
-          <Text className="text-base font-semibold text-blue-600">Kembali</Text>
+          <Text className="text-base font-semibold text-blue-600 dark:text-blue-400">
+            Kembali
+          </Text>
         </Pressable>
         <TextInput
           value={name}
           onChangeText={setName}
           onEndEditing={onSaveName}
           onSubmitEditing={onSaveName}
-          className="rounded-[10px] border border-slate-200 px-3 py-2.5 text-xl font-bold text-slate-900"
+          className="rounded-[10px] border border-slate-200 px-3 py-2.5 text-xl font-bold text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
           placeholder="Nama setlist"
         />
-        <Text className="mt-2 text-xs text-slate-400">
+        <Text className="mt-2 text-xs text-slate-400 dark:text-slate-500">
           Urutan: atas ke bawah. Gunakan panah naik/turun untuk menggeser.
         </Text>
       </View>
@@ -138,8 +145,10 @@ export default function SetlistDetailScreen({
           className="min-h-[48px] flex-row items-center justify-center gap-1.5 rounded-[10px] border border-slate-300 px-4 py-3"
           onPress={() => void onShare()}
         >
-          <Ionicons name="share-outline" size={20} color="#334155" />
-          <Text className="text-[15px] font-semibold text-slate-700">Bagikan</Text>
+          <Ionicons name="share-outline" size={20} color={colors.iconOnCard} />
+          <Text className="text-[15px] font-semibold text-slate-700 dark:text-slate-300">
+            Bagikan
+          </Text>
         </Pressable>
       </View>
 
@@ -158,17 +167,20 @@ export default function SetlistDetailScreen({
         keyExtractor={(item, index) => `${item.songId}-${index}`}
         contentContainerStyle={{ paddingBottom: insets.bottom + 80 }}
         ListEmptyComponent={
-          <Text className="mt-6 px-6 text-center text-slate-500">
+          <Text className="mt-6 px-6 text-center text-slate-500 dark:text-slate-400">
             Belum ada lagu. Tambah dari tombol di atas.
           </Text>
         }
         renderItem={({ item, index }) => (
-          <View className="mx-4 mb-2 flex-row items-center rounded-[10px] border border-slate-200 bg-white px-3 py-2.5">
+          <View className="mx-4 mb-2 flex-row items-center rounded-[10px] border border-slate-200 bg-white px-3 py-2.5 dark:border-slate-700 dark:bg-slate-800">
             <View className="min-w-0 flex-1 flex-row items-center gap-2.5">
               <Text className="min-w-[36px] text-base font-bold text-slate-500">
                 {item.songId}
               </Text>
-              <Text className="min-w-0 flex-1 text-base text-slate-900" numberOfLines={2}>
+              <Text
+                className="min-w-0 flex-1 text-base text-slate-900 dark:text-slate-100"
+                numberOfLines={2}
+              >
                 {item.title}
               </Text>
             </View>
@@ -207,7 +219,7 @@ export default function SetlistDetailScreen({
       />
 
       <View
-        className="absolute bottom-0 left-0 right-0 border-t border-slate-200 bg-slate-50 px-4 pt-2.5"
+        className="absolute bottom-0 left-0 right-0 border-t border-slate-200 bg-slate-50 px-4 pt-2.5 dark:border-slate-700 dark:bg-slate-900"
         style={{ paddingBottom: Math.max(insets.bottom, 12) }}
       >
         <Pressable className="items-center py-2.5" onPress={onDelete}>

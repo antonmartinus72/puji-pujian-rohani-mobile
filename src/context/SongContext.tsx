@@ -4,6 +4,7 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -33,6 +34,11 @@ function sortSongsById(songs: Song[] | undefined): Song[] {
   return [...(songs || [])].sort((a, b) => (a.id ?? 0) - (b.id ?? 0));
 }
 
+export interface StartupUpdateOffer {
+  profile: DatabaseProfile;
+  remoteVersion: RemoteVersionPayload;
+}
+
 export interface SongContextValue {
   songs: Song[];
   meta: { version: string; updatedAt: string };
@@ -58,9 +64,8 @@ export interface SongContextValue {
   downloadActiveUpdate: (remoteVersion: RemoteVersionPayload) => Promise<void>;
   pendingUpdate: RemoteVersionPayload | null;
   dismissUpdateBanner: () => void;
-  confirmUpdateSuccess: () => void;
-  updateMessage: string | null;
-  setUpdateMessage: (msg: string | null) => void;
+  startupUpdateOffer: StartupUpdateOffer | null;
+  clearStartupUpdateOffer: () => void;
 }
 
 const SongContext = createContext<SongContextValue | null>(null);
@@ -79,7 +84,9 @@ export function SongProvider({ children }: { children: ReactNode }) {
   const [pendingUpdate, setPendingUpdate] = useState<RemoteVersionPayload | null>(
     null
   );
-  const [updateMessage, setUpdateMessage] = useState<string | null>(null);
+  const [startupUpdateOffer, setStartupUpdateOffer] =
+    useState<StartupUpdateOffer | null>(null);
+  const startupToastShown = useRef(false);
 
   const activeProfile = useMemo(() => {
     if (!registry) return createDefaultProfile();
@@ -133,9 +140,21 @@ export function SongProvider({ children }: { children: ReactNode }) {
     const result = await checkForUpdate(profile);
     if (result.hasUpdate && result.remoteVersion) {
       setPendingUpdate(result.remoteVersion);
+      if (!startupToastShown.current) {
+        startupToastShown.current = true;
+        setStartupUpdateOffer({
+          profile,
+          remoteVersion: result.remoteVersion,
+        });
+      }
     } else {
       setPendingUpdate(null);
     }
+    return result;
+  }, []);
+
+  const clearStartupUpdateOffer = useCallback(() => {
+    setStartupUpdateOffer(null);
   }, []);
 
   const checkActiveUpdate = useCallback(async () => {
@@ -153,8 +172,9 @@ export function SongProvider({ children }: { children: ReactNode }) {
       const data = await downloadUpdate(profile, remoteVersion);
       applyPayload(data);
       setPendingUpdate(null);
+      clearStartupUpdateOffer();
     },
-    [registry, applyPayload]
+    [registry, applyPayload, clearStartupUpdateOffer]
   );
 
   const switchDatabase = useCallback(
@@ -269,11 +289,8 @@ export function SongProvider({ children }: { children: ReactNode }) {
 
   const dismissUpdateBanner = useCallback(() => {
     setPendingUpdate(null);
-  }, []);
-
-  const confirmUpdateSuccess = useCallback(() => {
-    setUpdateMessage(null);
-  }, []);
+    clearStartupUpdateOffer();
+  }, [clearStartupUpdateOffer]);
 
   const value = useMemo<SongContextValue>(
     () => ({
@@ -301,9 +318,8 @@ export function SongProvider({ children }: { children: ReactNode }) {
       downloadActiveUpdate,
       pendingUpdate,
       dismissUpdateBanner,
-      confirmUpdateSuccess,
-      updateMessage,
-      setUpdateMessage,
+      startupUpdateOffer,
+      clearStartupUpdateOffer,
     }),
     [
       songs,
@@ -330,8 +346,8 @@ export function SongProvider({ children }: { children: ReactNode }) {
       downloadActiveUpdate,
       pendingUpdate,
       dismissUpdateBanner,
-      confirmUpdateSuccess,
-      updateMessage,
+      startupUpdateOffer,
+      clearStartupUpdateOffer,
     ]
   );
 

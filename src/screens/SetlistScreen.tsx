@@ -4,11 +4,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useSetlist } from '../context/SetlistContext';
 import type { RootStackScreenProps } from '../navigation/types';
+import { useThemeColors } from '../hooks/useThemeColors';
 
 export default function SetlistScreen({
   navigation,
 }: RootStackScreenProps<'Setlists'>) {
   const insets = useSafeAreaInsets();
+  const colors = useThemeColors();
   const { setlists, hydrated, createSetlist } = useSetlist();
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState('');
@@ -21,18 +23,22 @@ export default function SetlistScreen({
   }
 
   return (
-    <View className="flex-1 bg-slate-50" style={{ paddingTop: insets.top }}>
-      <View className="border-b border-slate-200 bg-white px-4 pb-3">
+    <View className="flex-1 bg-slate-50 dark:bg-slate-900" style={{ paddingTop: insets.top }}>
+      <View className="border-b border-slate-200 bg-white px-4 pb-3 dark:border-slate-700 dark:bg-slate-800">
         <Pressable
           onPress={() => navigation.goBack()}
           hitSlop={10}
           className="mb-2 flex-row items-center gap-0.5"
         >
-          <Ionicons name="chevron-back" size={22} color="#2563eb" />
-          <Text className="text-base font-semibold text-blue-600">Kembali</Text>
+          <Ionicons name="chevron-back" size={22} color={colors.iconBack} />
+          <Text className="text-base font-semibold text-blue-600 dark:text-blue-400">
+            Kembali
+          </Text>
         </Pressable>
-        <Text className="text-[22px] font-bold text-slate-900">Daftar Setlist</Text>
-        <Text className="mt-1 text-sm text-slate-500">
+        <Text className="text-[22px] font-bold text-slate-900 dark:text-slate-100">
+          Daftar Setlist
+        </Text>
+        <Text className="mt-1 text-sm text-slate-500 dark:text-slate-400">
           Setlist untuk satu sesi acara
         </Text>
       </View>
@@ -53,19 +59,21 @@ export default function SetlistScreen({
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
           ListEmptyComponent={
-            <Text className="mx-6 mt-8 text-center text-[15px] leading-[22px] text-slate-500">
+            <Text className="mx-6 mt-8 text-center text-[15px] leading-[22px] text-slate-500 dark:text-slate-400">
               Belum ada setlist. Buat satu untuk mengurutkan lagu ibadah.
             </Text>
           }
           renderItem={({ item }) => (
             <Pressable
-              className="mx-4 mb-2.5 rounded-xl border border-slate-200 bg-white p-4"
+              className="mx-4 mb-2.5 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800"
               onPress={() =>
                 navigation.navigate('SetlistDetail', { setlistId: item.id })
               }
             >
-              <Text className="text-[17px] font-semibold text-slate-900">{item.name}</Text>
-              <Text className="mt-1 text-sm text-slate-500">
+              <Text className="text-[17px] font-semibold text-slate-900 dark:text-slate-100">
+                {item.name}
+              </Text>
+              <Text className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                 {item.songs?.length ?? 0} lagu
               </Text>
             </Pressable>
@@ -84,7 +92,7 @@ export default function SetlistScreen({
           onPress={() => setCreateOpen(false)}
         >
           <Pressable
-            className="rounded-[14px] bg-white p-5"
+            className="rounded-[14px] bg-white p-5 dark:bg-slate-800"
             onPress={(e) => e.stopPropagation()}
           >
             <Text className="mb-3 text-lg font-bold text-slate-900">Nama setlist</Text>

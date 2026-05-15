@@ -1,44 +1,45 @@
 import './global.css';
 import './src/lib/nativewindSetup';
 import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { StatusBar } from 'expo-status-bar';
+import Toast from 'react-native-toast-message';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { SongProvider } from './src/context/SongContext';
 import { SetlistProvider } from './src/context/SetlistContext';
-import SongReaderScreen from './src/screens/SongReaderScreen';
-import SongListScreen from './src/screens/SongListScreen';
-import SetlistScreen from './src/screens/SetlistScreen';
-import SetlistDetailScreen from './src/screens/SetlistDetailScreen';
-import DatabaseScreen from './src/screens/DatabaseScreen';
-import type { RootStackParamList } from './src/navigation/types';
+import { UpdateModalProvider } from './src/context/UpdateModalContext';
+import { toastConfig } from './src/components/ToastConfig';
+import DatabaseUpdateModal from './src/components/DatabaseUpdateModal';
+import StartupUpdateListener from './src/components/StartupUpdateListener';
+import AppNavigation from './src/navigation/AppNavigation';
+import { getThemeColors } from './src/constants/themeColors';
 
-const Stack = createNativeStackNavigator<RootStackParamList>();
+function AppRoot() {
+  const { isDark } = useTheme();
+  const colors = getThemeColors(isDark);
 
-export default function App() {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
       <SafeAreaProvider>
         <SongProvider>
-          <SetlistProvider>
-            <NavigationContainer>
-              <StatusBar style="light" />
-              <Stack.Navigator
-                initialRouteName="Reader"
-                screenOptions={{ headerShown: false }}
-              >
-                <Stack.Screen name="Reader" component={SongReaderScreen} />
-                <Stack.Screen name="SongList" component={SongListScreen} />
-                <Stack.Screen name="Setlists" component={SetlistScreen} />
-                <Stack.Screen name="SetlistDetail" component={SetlistDetailScreen} />
-                <Stack.Screen name="Database" component={DatabaseScreen} />
-              </Stack.Navigator>
-            </NavigationContainer>
-          </SetlistProvider>
+          <UpdateModalProvider>
+            <SetlistProvider>
+              <AppNavigation />
+              <StartupUpdateListener />
+              <DatabaseUpdateModal />
+              <Toast config={toastConfig} />
+            </SetlistProvider>
+          </UpdateModalProvider>
         </SongProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
+  );
+}
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AppRoot />
+    </ThemeProvider>
   );
 }

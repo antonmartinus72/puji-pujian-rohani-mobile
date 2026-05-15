@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import { useTheme } from '../context/ThemeContext';
 
 const BASE_LABEL = 16;
 const BASE_LINE = 20;
@@ -41,6 +42,7 @@ export default function LyricBlock({
   mergeWithNext = false,
   onPress,
 }: LyricBlockProps) {
+  const { isDark } = useTheme();
   const s = fontScale;
   const sectionGap = Math.round(BASE_SECTION_GAP * s);
   const marginBottom = selected && mergeWithNext ? 0 : sectionGap;
@@ -62,16 +64,16 @@ export default function LyricBlock({
         fontSize: Math.round(BASE_LABEL * s),
         lineHeight: Math.round(BASE_LABEL * 1.35 * s),
         fontWeight: '600' as const,
-        color: '#334155',
+        color: isDark ? '#94a3b8' : '#334155',
         marginBottom: Math.round(BASE_LABEL_MARGIN * s),
       },
       line: {
         fontSize: Math.round(BASE_LINE * s),
         lineHeight: Math.round(BASE_LINE_HEIGHT * s),
-        color: '#0f172a',
+        color: isDark ? '#f1f5f9' : '#0f172a',
       },
     }),
-    [s]
+    [s, isDark]
   );
 
   return (
@@ -98,9 +100,9 @@ export default function LyricBlock({
               overflow: 'hidden',
             },
             selected
-              ? { backgroundColor: '#bfdbfe' }
+              ? { backgroundColor: isDark ? '#1e3a5f' : '#bfdbfe' }
               : pressed
-                ? { backgroundColor: '#f1f5f9' }
+                ? { backgroundColor: isDark ? '#334155' : '#f1f5f9' }
                 : null,
           ]}
         >
