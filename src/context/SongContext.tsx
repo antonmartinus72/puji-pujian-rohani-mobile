@@ -9,19 +9,28 @@ import React, {
 } from 'react';
 import { AppState } from 'react-native';
 import bundledSongs from '../../assets/songs.json';
-import { KEYS, getItem } from '../services/storage';
-import { checkForUpdate } from '../services/updater';
+import {
+  type DatabaseId,
+  type DatabaseProfile,
+  type DatabaseRegistryState,
+  clearProfileCache,
+  createDefaultProfile,
+  loadRegistry,
+  setActiveProfileId,
+  updateDefaultGithub,
+  addCustomProfile,
+  removeCustomProfile,
+  getProfile,
+} from '../services/databaseRegistry';
+import type { GithubRepoConfig } from '../utils/githubUrls';
+import { dbSongsKey, getDynamicItem } from '../services/storage';
+import { checkForUpdate, downloadUpdate } from '../services/updater';
 import type { RemoteVersionPayload } from '../services/updater';
+import { isSongsPayload } from '../utils/songsPayload';
 import type { Song, SongsPayload } from '../types/songs';
 
 function sortSongsById(songs: Song[] | undefined): Song[] {
   return [...(songs || [])].sort((a, b) => (a.id ?? 0) - (b.id ?? 0));
-}
-
-function isSongsPayload(parsed: unknown): parsed is SongsPayload {
-  if (!parsed || typeof parsed !== 'object') return false;
-  const p = parsed as { songs?: unknown };
-  return Array.isArray(p.songs);
 }
 
 export interface SongContextValue {
@@ -35,7 +44,18 @@ export interface SongContextValue {
   goToId: (id: number) => void;
   goToIndex: (index: number) => void;
   applyPayload: (data: SongsPayload) => void;
-  loadFromStorage: () => Promise<boolean>;
+  activeProfile: DatabaseProfile;
+  profiles: DatabaseProfile[];
+  registryReady: boolean;
+  databaseSwitchToken: number;
+  switchDatabase: (id: DatabaseId) => Promise<void>;
+  refreshRegistry: () => Promise<DatabaseRegistryState>;
+  updateDefaultRepo: (github: GithubRepoConfig) => Promise<void>;
+  addDatabase: (name: string, github: GithubRepoConfig) => Promise<DatabaseProfile>;
+  removeDatabase: (id: DatabaseId) => Promise<void>;
+  resetDefaultToBundled: () => Promise<void>;
+  checkActiveUpdate: () => Promise<void>;
+  downloadActiveUpdate: (remoteVersion: RemoteVersionPayload) => Promise<void>;
   pendingUpdate: RemoteVersionPayload | null;
   dismissUpdateBanner: () => void;
   confirmUpdateSuccess: () => void;
@@ -53,10 +73,20 @@ export function SongProvider({ children }: { children: ReactNode }) {
   });
   const [currentIndex, setCurrentIndex] = useState(0);
   const [ready, setReady] = useState(false);
+  const [registryReady, setRegistryReady] = useState(false);
+  const [registry, setRegistry] = useState<DatabaseRegistryState | null>(null);
+  const [databaseSwitchToken, setDatabaseSwitchToken] = useState(0);
   const [pendingUpdate, setPendingUpdate] = useState<RemoteVersionPayload | null>(
     null
   );
   const [updateMessage, setUpdateMessage] = useState<string | null>(null);
+
+  const activeProfile = useMemo(() => {
+    if (!registry) return createDefaultProfile();
+    return getProfile(registry, registry.activeId) ?? createDefaultProfile();
+  }, [registry]);
+
+  const profiles = registry?.profiles ?? [];
 
   const applyPayload = useCallback((data: SongsPayload) => {
     const list = sortSongsById(data.songs);
@@ -68,51 +98,147 @@ export function SongProvider({ children }: { children: ReactNode }) {
     setCurrentIndex(0);
   }, []);
 
-  const loadFromStorage = useCallback(async () => {
-    const raw = await getItem(KEYS.SONGS_DATA);
-    if (raw) {
-      try {
-        const parsed: unknown = JSON.parse(raw);
-        if (isSongsPayload(parsed)) {
-          applyPayload(parsed);
-          return true;
+  const loadProfileSongs = useCallback(
+    async (profile: DatabaseProfile): Promise<boolean> => {
+      const raw = await getDynamicItem(dbSongsKey(profile.id));
+      if (raw) {
+        try {
+          const parsed: unknown = JSON.parse(raw);
+          if (isSongsPayload(parsed)) {
+            applyPayload(parsed);
+            return true;
+          }
+        } catch {
+          /* fallthrough */
         }
-      } catch {
-        /* fallthrough */
       }
+      if (profile.kind === 'default') {
+        applyPayload(bundledSongs as SongsPayload);
+        return true;
+      }
+      applyPayload({ version: '0.0.0', songs: [] });
+      return false;
+    },
+    [applyPayload]
+  );
+
+  const refreshRegistry = useCallback(async () => {
+    const state = await loadRegistry();
+    setRegistry(state);
+    setRegistryReady(true);
+    return state;
+  }, []);
+
+  const runVersionCheck = useCallback(async (profile: DatabaseProfile) => {
+    const result = await checkForUpdate(profile);
+    if (result.hasUpdate && result.remoteVersion) {
+      setPendingUpdate(result.remoteVersion);
+    } else {
+      setPendingUpdate(null);
     }
-    return false;
-  }, [applyPayload]);
+  }, []);
+
+  const checkActiveUpdate = useCallback(async () => {
+    if (!registry) return;
+    const profile = getProfile(registry, registry.activeId);
+    if (!profile) return;
+    await runVersionCheck(profile);
+  }, [registry, runVersionCheck]);
+
+  const downloadActiveUpdate = useCallback(
+    async (remoteVersion: RemoteVersionPayload) => {
+      if (!registry) return;
+      const profile = getProfile(registry, registry.activeId);
+      if (!profile) return;
+      const data = await downloadUpdate(profile, remoteVersion);
+      applyPayload(data);
+      setPendingUpdate(null);
+    },
+    [registry, applyPayload]
+  );
+
+  const switchDatabase = useCallback(
+    async (id: DatabaseId) => {
+      if (!registry || registry.activeId === id) return;
+      const profile = getProfile(registry, id);
+      if (!profile) return;
+      const state = await setActiveProfileId(id);
+      setRegistry(state);
+      await loadProfileSongs(profile);
+      setDatabaseSwitchToken((t) => t + 1);
+      setPendingUpdate(null);
+      void runVersionCheck(profile);
+    },
+    [registry, loadProfileSongs, runVersionCheck]
+  );
+
+  const updateDefaultRepo = useCallback(
+    async (github: GithubRepoConfig) => {
+      const state = await updateDefaultGithub(github);
+      setRegistry(state);
+    },
+    []
+  );
+
+  const addDatabase = useCallback(async (name: string, github: GithubRepoConfig) => {
+    const { state, profile } = await addCustomProfile(name, github);
+    setRegistry(state);
+    return profile;
+  }, []);
+
+  const removeDatabase = useCallback(
+    async (id: DatabaseId) => {
+      const state = await removeCustomProfile(id);
+      setRegistry(state);
+      if (registry?.activeId === id) {
+        const profile = getProfile(state, state.activeId);
+        if (profile) {
+          await loadProfileSongs(profile);
+          setDatabaseSwitchToken((t) => t + 1);
+        }
+      }
+    },
+    [registry?.activeId, loadProfileSongs]
+  );
+
+  const resetDefaultToBundled = useCallback(async () => {
+    await clearProfileCache('default');
+    const profile = getProfile(registry ?? { activeId: 'default', profiles: [] }, 'default');
+    if (profile && registry?.activeId === 'default') {
+      applyPayload(bundledSongs as SongsPayload);
+    }
+    setPendingUpdate(null);
+    if (profile) void runVersionCheck(profile);
+  }, [registry, applyPayload, runVersionCheck]);
 
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      const ok = await loadFromStorage();
-      if (!cancelled && !ok) {
-        applyPayload(bundledSongs as SongsPayload);
+      const state = await loadRegistry();
+      if (cancelled) return;
+      setRegistry(state);
+      setRegistryReady(true);
+      const profile = getProfile(state, state.activeId);
+      if (profile) {
+        await loadProfileSongs(profile);
       }
       if (!cancelled) setReady(true);
     })();
     return () => {
       cancelled = true;
     };
-  }, [applyPayload, loadFromStorage]);
-
-  const runVersionCheck = useCallback(async () => {
-    const result = await checkForUpdate();
-    if (result.hasUpdate && result.remoteVersion) {
-      setPendingUpdate(result.remoteVersion);
-    }
-  }, []);
+  }, [loadProfileSongs]);
 
   useEffect(() => {
-    if (!ready) return;
-    void runVersionCheck();
+    if (!ready || !registry) return;
+    const profile = getProfile(registry, registry.activeId);
+    if (!profile) return;
+    void runVersionCheck(profile);
     const sub = AppState.addEventListener('change', (state) => {
-      if (state === 'active') void runVersionCheck();
+      if (state === 'active') void runVersionCheck(profile);
     });
     return () => sub.remove();
-  }, [ready, runVersionCheck]);
+  }, [ready, registry?.activeId, runVersionCheck]);
 
   const currentSong = songs[currentIndex] ?? null;
 
@@ -161,7 +287,18 @@ export function SongProvider({ children }: { children: ReactNode }) {
       goToId,
       goToIndex,
       applyPayload,
-      loadFromStorage,
+      activeProfile,
+      profiles,
+      registryReady,
+      databaseSwitchToken,
+      switchDatabase,
+      refreshRegistry,
+      updateDefaultRepo,
+      addDatabase,
+      removeDatabase,
+      resetDefaultToBundled,
+      checkActiveUpdate,
+      downloadActiveUpdate,
       pendingUpdate,
       dismissUpdateBanner,
       confirmUpdateSuccess,
@@ -179,7 +316,18 @@ export function SongProvider({ children }: { children: ReactNode }) {
       goToId,
       goToIndex,
       applyPayload,
-      loadFromStorage,
+      activeProfile,
+      profiles,
+      registryReady,
+      databaseSwitchToken,
+      switchDatabase,
+      refreshRegistry,
+      updateDefaultRepo,
+      addDatabase,
+      removeDatabase,
+      resetDefaultToBundled,
+      checkActiveUpdate,
+      downloadActiveUpdate,
       pendingUpdate,
       dismissUpdateBanner,
       confirmUpdateSuccess,

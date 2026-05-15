@@ -12,6 +12,7 @@ import SongReaderScreen from './src/screens/SongReaderScreen';
 import SongListScreen from './src/screens/SongListScreen';
 import SetlistScreen from './src/screens/SetlistScreen';
 import SetlistDetailScreen from './src/screens/SetlistDetailScreen';
+import DatabaseScreen from './src/screens/DatabaseScreen';
 import type { RootStackParamList } from './src/navigation/types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -32,6 +33,7 @@ export default function App() {
                 <Stack.Screen name="SongList" component={SongListScreen} />
                 <Stack.Screen name="Setlists" component={SetlistScreen} />
                 <Stack.Screen name="SetlistDetail" component={SetlistDetailScreen} />
+                <Stack.Screen name="Database" component={DatabaseScreen} />
               </Stack.Navigator>
             </NavigationContainer>
           </SetlistProvider>

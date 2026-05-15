@@ -10,3 +10,4 @@ export const VERSION_URL = `https://raw.githubusercontent.com/${GITHUB_USERNAME}
 export const SONGS_URL = `https://raw.githubusercontent.com/${GITHUB_USERNAME}/${GITHUB_REPO}/${BRANCH}/songs.json`;
 
 export const APP_NAME = 'PPR Mobile';
+export const DEFAULT_DB_NAME = 'Database bawaan';
