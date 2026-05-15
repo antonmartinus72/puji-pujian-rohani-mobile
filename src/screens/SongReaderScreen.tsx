@@ -11,7 +11,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
 import LyricBlock, { formatLyricBlockPlainText } from '../components/LyricBlock';
-import UpdateBanner from '../components/UpdateBanner';
 import { useSongs } from '../context/SongContext';
 import { useSetlist } from '../context/SetlistContext';
 import { KEYS, getItem, setItem } from '../services/storage';
@@ -40,8 +39,6 @@ export default function SongReaderScreen({
     goNext,
     goPrev,
     ready,
-    updateMessage,
-    confirmUpdateSuccess,
   } = useSongs();
   const {
     activeSession,
@@ -256,30 +253,16 @@ export default function SongReaderScreen({
   if (!ready || !currentSong) {
     return (
       <View
-        className="flex-1 items-center justify-center bg-slate-50"
+        className="flex-1 items-center justify-center bg-slate-50 dark:bg-slate-900"
         style={{ paddingBottom: insets.bottom }}
       >
-        <Text className="text-base text-slate-500">Memuat lagu…</Text>
+        <Text className="text-base text-slate-500 dark:text-slate-400">Memuat lagu…</Text>
       </View>
     );
   }
 
   return (
-    <View className="flex-1 bg-slate-50">
-      {updateMessage ? (
-        <Pressable
-          className="border-b border-green-300 bg-green-100 px-3.5 py-2.5"
-          onPress={() => {
-            confirmUpdateSuccess();
-          }}
-        >
-          <Text className="text-[15px] font-semibold text-green-800">
-            {updateMessage}
-          </Text>
-          <Text className="mt-0.5 text-xs text-green-700">Tap untuk tutup</Text>
-        </Pressable>
-      ) : null}
-      <UpdateBanner />
+    <View className="flex-1 bg-slate-50 dark:bg-slate-900">
       {inSetlist && activeSetlistName ? (
         <View className="flex-row items-center justify-between border-b border-emerald-200 bg-emerald-50 px-3.5 py-2">
           <View className="mr-3 min-w-0 flex-1">
@@ -333,7 +316,7 @@ export default function SongReaderScreen({
                   jari untuk zoom teks lirik. Geser kiri/kanan untuk lagu
                   berikutnya/sebelumnya.
                 </Text>
-                <Text className="mb-2 text-[22px] font-bold text-slate-900">
+                <Text className="mb-2 text-[22px] font-bold text-slate-900 dark:text-slate-100">
                   {currentSong.id}. {currentSong.title}
                 </Text>
                 <View className="mb-3 h-px max-w-[200px] bg-slate-300" />
@@ -412,6 +395,7 @@ export default function SongReaderScreen({
         }
         onOpenSetlists={() => navigation.navigate('Setlists')}
         onOpenDatabase={() => navigation.navigate('Database')}
+        onOpenSettings={() => navigation.navigate('Settings')}
       />
     </View>
   );

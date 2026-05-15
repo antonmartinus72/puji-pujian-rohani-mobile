@@ -24,20 +24,23 @@ export default function SearchSongRow({
   return (
     <Pressable
       onPress={onPress}
-      className={`flex-row items-start border-b border-slate-200 px-3.5 py-3 ${active ? 'bg-blue-50' : ''}`}
+      className={`flex-row items-start border-b border-slate-200 px-3.5 py-3 dark:border-slate-700 ${active ? 'bg-blue-50 dark:bg-blue-950' : ''}`}
     >
       <Text className="w-11 pt-0.5 text-base font-semibold text-slate-500">
         {song.id}.
       </Text>
       <View className="min-w-0 flex-1">
-        <Text className="text-[17px] font-semibold text-slate-900" numberOfLines={2}>
+        <Text
+          className="text-[17px] font-semibold text-slate-900 dark:text-slate-100"
+          numberOfLines={2}
+        >
           {snippet.titleParts.map((p, i) => (
             <Text
               key={`t-${i}`}
               className={
                 p.highlight
-                  ? 'bg-yellow-200 text-[17px] font-bold text-slate-900'
-                  : 'text-[17px] font-semibold text-slate-900'
+                  ? 'bg-yellow-200 text-xl font-bold text-slate-900 dark:text-slate-600'
+                  : 'text-xl font-semibold text-slate-900 dark:text-slate-100'
               }
             >
               {p.text}

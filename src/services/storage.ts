@@ -6,6 +6,7 @@ export const KEYS = {
   SONGS_VERSION: 'songs_version',
   SETLISTS: 'setlists_data',
   LYRIC_FONT_SCALE: 'lyric_font_scale',
+  THEME_MODE: 'theme_mode',
 } as const;
 
 export type StorageKey = (typeof KEYS)[keyof typeof KEYS];

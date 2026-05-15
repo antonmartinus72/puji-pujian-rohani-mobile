@@ -10,6 +10,7 @@ import { useSetlist } from '../context/SetlistContext';
 import { searchSongs } from '../utils/search';
 import type { RouteProp } from '@react-navigation/native';
 import type { RootStackParamList, RootStackScreenProps } from '../navigation/types';
+import { useThemeColors } from '../hooks/useThemeColors';
 
 function screenTitleForVariant(
   variant: 'browse' | 'search' | 'number' | 'pick' | undefined
@@ -33,6 +34,7 @@ export default function SongListScreen({
   const { songs, goToId, currentSong } = useSongs();
   const { addSongToSetlist } = useSetlist();
   const insets = useSafeAreaInsets();
+  const colors = useThemeColors();
   const [q, setQ] = useState('');
   const [numQ, setNumQ] = useState('');
   const textInputRef = useRef<TextInput>(null);
@@ -92,18 +94,24 @@ export default function SongListScreen({
   };
 
   return (
-    <View className="flex-1 bg-slate-50" style={{ paddingTop: insets.top }}>
-      <View className="border-b border-slate-200 bg-white px-4 pb-3">
+    <View className="flex-1 bg-slate-50 dark:bg-slate-900" style={{ paddingTop: insets.top }}>
+      <View className="border-b border-slate-200 bg-white px-4 pb-3 dark:border-slate-700 dark:bg-slate-800">
         <Pressable
           onPress={() => navigation.goBack()}
           hitSlop={10}
           className="mb-2 flex-row items-center gap-0.5"
         >
-          <Ionicons name="chevron-back" size={22} color="#2563eb" />
-          <Text className="text-base font-semibold text-blue-600">Kembali</Text>
+          <Ionicons name="chevron-back" size={22} color={colors.iconBack} />
+          <Text className="text-base font-semibold text-blue-600 dark:text-blue-400">
+            Kembali
+          </Text>
         </Pressable>
-        <Text className="text-[22px] font-bold text-slate-900">{screenTitle}</Text>
-        <Text className="mt-1 text-sm text-slate-500">{songs.length} lagu</Text>
+        <Text className="text-[22px] font-bold text-slate-900 dark:text-slate-100">
+          {screenTitle}
+        </Text>
+        <Text className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          {songs.length} lagu
+        </Text>
       </View>
       <TextInput
         ref={textInputRef}
@@ -111,7 +119,7 @@ export default function SongListScreen({
         onChangeText={setQ}
         placeholder="Judul atau lirik…"
         placeholderTextColor="#94a3b8"
-        className="mx-4 mt-3 rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-base text-slate-900"
+        className="mx-4 mt-3 rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-base text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
         returnKeyType="search"
       />
       <TextInput
@@ -120,7 +128,7 @@ export default function SongListScreen({
         onChangeText={(t) => setNumQ(t.replace(/[^0-9]/g, ''))}
         placeholder="Nomor lagu…"
         placeholderTextColor="#94a3b8"
-        className="mx-4 mb-3 mt-2 rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-base text-slate-900"
+        className="mx-4 mb-3 mt-2 rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-base text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
         keyboardType="number-pad"
         returnKeyType="search"
         maxLength={8}
@@ -146,7 +154,7 @@ export default function SongListScreen({
           )
         }
         ListEmptyComponent={
-          <Text className="mt-6 text-center text-slate-500">
+          <Text className="mt-6 text-center text-slate-500 dark:text-slate-400">
             {q.trim() || numQ.trim() ? 'Tidak ada hasil.' : 'Belum ada lagu.'}
           </Text>
         }

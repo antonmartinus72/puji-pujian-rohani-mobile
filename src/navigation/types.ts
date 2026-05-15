@@ -9,6 +9,7 @@ export type RootStackParamList = {
   Setlists: undefined;
   SetlistDetail: { setlistId: string };
   Database: undefined;
+  Settings: undefined;
 };
 
 export type RootStackScreenProps<T extends keyof RootStackParamList> =
