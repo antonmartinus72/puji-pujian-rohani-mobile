@@ -3,10 +3,15 @@ export interface LyricSection {
   lines?: string[];
 }
 
+export type ScaleType = 'major' | 'minor';
+
 export interface Song {
   id: number;
-  title: string;
+  title: string[];
+  credit?: string[];
   tags?: string[];
+  rootNote?: string;
+  scaleType?: ScaleType;
   lyrics?: LyricSection[];
 }
 
