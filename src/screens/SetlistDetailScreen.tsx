@@ -14,6 +14,7 @@ import { useSongs } from '../context/SongContext';
 import { useSetlist } from '../context/SetlistContext';
 import type { RootStackScreenProps } from '../navigation/types';
 import { useThemeColors } from '../hooks/useThemeColors';
+import { formatListTitle } from '../utils/songDisplay';
 
 export default function SetlistDetailScreen({
   navigation,
@@ -99,7 +100,10 @@ export default function SetlistDetailScreen({
 
   const rows = activeSetlist.songs.map((id) => {
     const song = songs.find((s) => Number(s.id) === Number(id));
-    return { songId: id, title: song?.title ?? 'Tidak ditemukan' };
+    return {
+      songId: id,
+      title: song ? formatListTitle(song) : 'Tidak ditemukan',
+    };
   });
 
   return (

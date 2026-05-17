@@ -27,6 +27,7 @@ import type { GithubRepoConfig } from '../utils/githubUrls';
 import { dbSongsKey, getDynamicItem } from '../services/storage';
 import { checkForUpdate, downloadUpdate } from '../services/updater';
 import type { RemoteVersionPayload } from '../services/updater';
+import { normalizeSongsPayload } from '../utils/normalizeSong';
 import { isSongsPayload } from '../utils/songsPayload';
 import type { Song, SongsPayload } from '../types/songs';
 
@@ -96,11 +97,12 @@ export function SongProvider({ children }: { children: ReactNode }) {
   const profiles = registry?.profiles ?? [];
 
   const applyPayload = useCallback((data: SongsPayload) => {
-    const list = sortSongsById(data.songs);
+    const normalized = normalizeSongsPayload(data);
+    const list = sortSongsById(normalized.songs);
     setSongs(list);
     setMeta({
-      version: data.version ?? '1.0.0',
-      updatedAt: data.updatedAt ?? '',
+      version: normalized.version ?? '1.0.0',
+      updatedAt: normalized.updatedAt ?? '',
     });
     setCurrentIndex(0);
   }, []);

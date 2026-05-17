@@ -11,6 +11,7 @@ import React, {
 import { useSongs } from './SongContext';
 import { dbSetlistsKey, getDynamicItem, setDynamicItem } from '../services/storage';
 import type { WorshipSetlist, SetlistSession } from '../types/setlist';
+import { formatListTitle } from '../utils/songDisplay';
 
 function newSetlistId(): string {
   return `setlist_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 9)}`;
@@ -307,7 +308,7 @@ export function SetlistProvider({ children }: { children: ReactNode }) {
       if (!sl) return '';
       const lines = sl.songs.map((songId, i) => {
         const song = songs.find((x) => Number(x.id) === Number(songId));
-        const title = song ? song.title : '?';
+        const title = song ? formatListTitle(song) : '?';
         return `${i + 1}. ${songId} — ${title}`;
       });
       return `${sl.name}\n\n${lines.join('\n')}`;

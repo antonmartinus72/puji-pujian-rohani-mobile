@@ -21,12 +21,14 @@ export default function SearchSongRow({
     [song, textQuery]
   );
 
+  const isCreditSnippet = snippet.matchKind === 'credit';
+
   return (
     <Pressable
       onPress={onPress}
       className={`flex-row items-start border-b border-slate-200 px-3.5 py-3 dark:border-slate-700 ${active ? 'bg-blue-50 dark:bg-blue-950' : ''}`}
     >
-      <Text className="w-11 pt-0.5 text-base font-semibold text-slate-500">
+      <Text className="w-11 pt-0.5 text-base font-semibold text-slate-500 dark:text-slate-400">
         {song.id}.
       </Text>
       <View className="min-w-0 flex-1">
@@ -39,7 +41,7 @@ export default function SearchSongRow({
               key={`t-${i}`}
               className={
                 p.highlight
-                  ? 'bg-yellow-200 text-xl font-bold text-slate-900 dark:text-slate-600'
+                  ? 'bg-yellow-200 text-xl font-bold text-slate-900 dark:bg-yellow-900 dark:text-slate-100'
                   : 'text-xl font-semibold text-slate-900 dark:text-slate-100'
               }
             >
@@ -47,24 +49,28 @@ export default function SearchSongRow({
             </Text>
           ))}
         </Text>
-        {snippet.lyricParts && snippet.lyricParts.length > 0 ? (
+        {snippet.secondaryParts && snippet.secondaryParts.length > 0 ? (
           <Text className="mt-1.5 text-sm leading-5" numberOfLines={3}>
-            {snippet.lyricEllipsLeft ? (
+            {snippet.secondaryEllipsLeft ? (
               <Text className="text-sm leading-5 text-slate-400">…</Text>
             ) : null}
-            {snippet.lyricParts.map((p, i) => (
+            {snippet.secondaryParts.map((p, i) => (
               <Text
-                key={`l-${i}`}
+                key={`s-${i}`}
                 className={
                   p.highlight
-                    ? 'text-sm font-semibold leading-5 text-slate-700 bg-yellow-100'
-                    : 'text-sm leading-5 text-slate-500'
+                    ? isCreditSnippet
+                      ? 'text-sm font-semibold leading-5 text-violet-700 bg-violet-100 dark:text-violet-200 dark:bg-violet-900'
+                      : 'text-sm font-semibold leading-5 text-slate-700 bg-yellow-100 dark:text-slate-200 dark:bg-yellow-900'
+                    : isCreditSnippet
+                      ? 'text-sm leading-5 text-violet-500 dark:text-violet-400'
+                      : 'text-sm leading-5 text-slate-500 dark:text-slate-400'
                 }
               >
                 {p.text}
               </Text>
             ))}
-            {snippet.lyricEllipsRight ? (
+            {snippet.secondaryEllipsRight ? (
               <Text className="text-sm leading-5 text-slate-400">…</Text>
             ) : null}
           </Text>

@@ -1,13 +1,20 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Pressable, Text, TextInput, View } from 'react-native';
 import { useFocusEffect, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import SongCard from '../components/SongCard';
 import SearchSongRow from '../components/SearchSongRow';
+import SearchCategoryFilters from '../components/SearchCategoryFilters';
+import SearchHistoryDropdown from '../components/SearchHistoryDropdown';
 import { useSongs } from '../context/SongContext';
 import { useSetlist } from '../context/SetlistContext';
-import { searchSongs } from '../utils/search';
+import { addSearchHistory, loadSearchHistory } from '../services/searchHistory';
+import {
+  DEFAULT_SEARCH_CATEGORIES,
+  searchSongs,
+  type SearchCategories,
+} from '../utils/search';
 import type { RouteProp } from '@react-navigation/native';
 import type { RootStackParamList, RootStackScreenProps } from '../navigation/types';
 import { useThemeColors } from '../hooks/useThemeColors';
@@ -37,10 +44,17 @@ export default function SongListScreen({
   const colors = useThemeColors();
   const [q, setQ] = useState('');
   const [numQ, setNumQ] = useState('');
+  const [categories, setCategories] = useState<SearchCategories>(
+    DEFAULT_SEARCH_CATEGORIES
+  );
+  const [searchHistory, setSearchHistory] = useState<string[]>([]);
+  const [textFocused, setTextFocused] = useState(false);
   const textInputRef = useRef<TextInput>(null);
   const numInputRef = useRef<TextInput>(null);
+  const blurTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const variant = route.params?.variant ?? 'browse';
+  const showSearchExtras = variant === 'search' || variant === 'pick';
   const pickSetlistId =
     variant === 'pick' && route.params?.setlistId
       ? route.params.setlistId
@@ -48,10 +62,17 @@ export default function SongListScreen({
 
   const screenTitle = screenTitleForVariant(variant);
 
+  const refreshHistory = useCallback(async () => {
+    const items = await loadSearchHistory();
+    setSearchHistory(items);
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
       setQ('');
       setNumQ('');
+      setCategories(DEFAULT_SEARCH_CATEGORIES);
+      void refreshHistory();
       const v = route.params?.variant ?? 'browse';
       const t = setTimeout(() => {
         if (v === 'search') textInputRef.current?.focus();
@@ -59,8 +80,20 @@ export default function SongListScreen({
         else if (v === 'pick') textInputRef.current?.focus();
       }, 80);
       return () => clearTimeout(t);
-    }, [route.params?.variant, route.params?.setlistId])
+    }, [route.params?.variant, route.params?.setlistId, refreshHistory])
   );
+
+  useEffect(() => {
+    return () => {
+      if (blurTimeoutRef.current) clearTimeout(blurTimeoutRef.current);
+    };
+  }, []);
+
+  const filteredHistory = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    if (!needle) return searchHistory;
+    return searchHistory.filter((entry) => entry.toLowerCase().includes(needle));
+  }, [searchHistory, q]);
 
   const results = useMemo(() => {
     const qTrim = q.trim();
@@ -70,18 +103,28 @@ export default function SongListScreen({
       return list.filter((s) => String(s.id).startsWith(numTrim));
     };
     if (qTrim && numTrim) {
-      return byNumber(searchSongs(songs, q));
+      return byNumber(searchSongs(songs, q, categories));
     }
     if (numTrim) {
       return songs.filter((s) => String(s.id).startsWith(numTrim));
     }
     if (qTrim) {
-      return searchSongs(songs, q);
+      return searchSongs(songs, q, categories);
     }
     return songs;
-  }, [songs, q, numQ]);
+  }, [songs, q, numQ, categories]);
 
   const showSearchRows = !!q.trim();
+
+  const persistSearchQuery = useCallback(
+    async (query: string) => {
+      const trimmed = query.trim();
+      if (!trimmed) return;
+      await addSearchHistory(trimmed);
+      await refreshHistory();
+    },
+    [refreshHistory]
+  );
 
   const onPickSong = (id: number) => {
     if (pickSetlistId) {
@@ -91,6 +134,37 @@ export default function SongListScreen({
     }
     goToId(id);
     navigation.navigate('Reader');
+  };
+
+  const onTextFocus = () => {
+    if (blurTimeoutRef.current) {
+      clearTimeout(blurTimeoutRef.current);
+      blurTimeoutRef.current = null;
+    }
+    setTextFocused(true);
+    void refreshHistory();
+  };
+
+  const onTextBlur = () => {
+    blurTimeoutRef.current = setTimeout(() => {
+      setTextFocused(false);
+    }, 180);
+  };
+
+  const onHistorySelect = (entry: string) => {
+    if (blurTimeoutRef.current) {
+      clearTimeout(blurTimeoutRef.current);
+      blurTimeoutRef.current = null;
+    }
+    setQ(entry);
+    setTextFocused(false);
+    textInputRef.current?.blur();
+    void persistSearchQuery(entry);
+  };
+
+  const onSearchSubmit = () => {
+    void persistSearchQuery(q);
+    textInputRef.current?.blur();
   };
 
   return (
@@ -113,15 +187,30 @@ export default function SongListScreen({
           {songs.length} lagu
         </Text>
       </View>
-      <TextInput
-        ref={textInputRef}
-        value={q}
-        onChangeText={setQ}
-        placeholder="Judul atau lirik…"
-        placeholderTextColor="#94a3b8"
-        className="mx-4 mt-3 rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-base text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
-        returnKeyType="search"
-      />
+      <View className="relative z-10">
+        <TextInput
+          ref={textInputRef}
+          value={q}
+          onChangeText={setQ}
+          onFocus={onTextFocus}
+          onBlur={onTextBlur}
+          onSubmitEditing={onSearchSubmit}
+          placeholder="Judul atau lirik…"
+          placeholderTextColor="#94a3b8"
+          className="mx-4 mt-3 rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-base text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+          returnKeyType="search"
+        />
+        {showSearchExtras ? (
+          <SearchHistoryDropdown
+            visible={textFocused && filteredHistory.length > 0}
+            entries={filteredHistory}
+            onSelect={onHistorySelect}
+          />
+        ) : null}
+      </View>
+      {showSearchExtras ? (
+        <SearchCategoryFilters categories={categories} onChange={setCategories} />
+      ) : null}
       <TextInput
         ref={numInputRef}
         value={numQ}
@@ -137,13 +226,17 @@ export default function SongListScreen({
         data={results}
         keyExtractor={(item) => String(item.id)}
         keyboardShouldPersistTaps="handled"
+        onScrollBeginDrag={() => setTextFocused(false)}
         renderItem={({ item }) =>
           showSearchRows ? (
             <SearchSongRow
               song={item}
               textQuery={q.trim()}
               active={!!currentSong && item.id === currentSong.id}
-              onPress={() => onPickSong(item.id)}
+              onPress={() => {
+                void persistSearchQuery(q);
+                onPickSong(item.id);
+              }}
             />
           ) : (
             <SongCard
