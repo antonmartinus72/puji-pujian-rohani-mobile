@@ -1,6 +1,9 @@
 import type { DatabaseProfile } from './databaseRegistry';
 import { buildGithubUrls } from '../utils/githubUrls';
-import { isSongsPayload } from '../utils/songsPayload';
+import {
+  formatValidationErrors,
+  validateSongsPayload,
+} from '../utils/validateSongsPayload';
 import {
   dbSongsKey,
   dbVersionKey,
@@ -58,14 +61,15 @@ export async function downloadUpdate(
   const response = await fetch(songsUrl);
   if (!response.ok) throw new Error('Gagal mengunduh songs.json');
   const songsData: unknown = await response.json();
-  if (!isSongsPayload(songsData)) {
-    throw new Error('Format songs.json tidak valid');
+  const validation = validateSongsPayload(songsData);
+  if (!validation.ok) {
+    throw new Error(formatValidationErrors(validation.errors));
   }
 
-  await setDynamicItem(dbSongsKey(profile.id), JSON.stringify(songsData));
+  await setDynamicItem(dbSongsKey(profile.id), JSON.stringify(validation.data));
   await setDynamicItem(dbVersionKey(profile.id), JSON.stringify(remoteVersion));
 
-  return songsData;
+  return validation.data;
 }
 
 export async function fetchRemoteVersion(
@@ -88,8 +92,9 @@ export async function probeGithubRepo(
     const response = await fetch(songsUrl, { method: 'GET' });
     if (!response.ok) throw new Error('Repositori tidak dapat diakses');
     const data: unknown = await response.json();
-    if (!isSongsPayload(data)) {
-      throw new Error('Format songs.json tidak valid');
+    const validation = validateSongsPayload(data);
+    if (!validation.ok) {
+      throw new Error(formatValidationErrors(validation.errors));
     }
   }
 }

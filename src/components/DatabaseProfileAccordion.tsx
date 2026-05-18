@@ -72,6 +72,7 @@ export interface DatabaseProfileAccordionProps {
   onDownload: () => void;
   onActivate: () => void;
   onDelete?: () => void;
+  loadError?: string | null;
 }
 
 export default function DatabaseProfileAccordion({
@@ -86,6 +87,7 @@ export default function DatabaseProfileAccordion({
   onDownload,
   onActivate,
   onDelete,
+  loadError,
 }: DatabaseProfileAccordionProps) {
   const [expanded, setExpanded] = useState(false);
   const colors = useThemeColors();
@@ -129,6 +131,17 @@ export default function DatabaseProfileAccordion({
             color={colors.iconMuted}
           />
         </Pressable>
+
+        {loadError ? (
+          <View className="mt-3 rounded-lg border border-red-300 bg-red-50 px-3 py-2.5 dark:border-red-800 dark:bg-red-950">
+            <Text className="text-xs font-bold uppercase tracking-wide text-red-700 dark:text-red-300">
+              Format database tidak valid
+            </Text>
+            <Text className="mt-1 text-sm leading-5 text-red-800 dark:text-red-200">
+              {loadError}
+            </Text>
+          </View>
+        ) : null}
 
         <View className="mt-3">
           <ActionButton

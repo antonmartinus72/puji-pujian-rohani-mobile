@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   Modal,
   Pressable,
@@ -36,6 +37,8 @@ export default function DatabaseScreen({
     removeDatabase,
     resetDefaultToBundled,
     refreshRegistry,
+    profileLoadErrors,
+    refreshProfileValidation,
   } = useSongs();
   const { openUpdateModal } = useUpdateModal();
   const { isDark } = useTheme();
@@ -76,6 +79,12 @@ export default function DatabaseScreen({
     defaultProfile?.github.repo,
     defaultProfile?.github.branch,
   ]);
+
+  useFocusEffect(
+    useCallback(() => {
+      void refreshProfileValidation();
+    }, [refreshProfileValidation])
+  );
 
   const handleCheck = useCallback(
     async (profile: DatabaseProfile) => {
@@ -304,6 +313,7 @@ export default function DatabaseScreen({
                 ? () => confirmDelete(profile)
                 : undefined
             }
+            loadError={profileLoadErrors[profile.id] ?? null}
             defaultRepo={
               profile.kind === 'default'
                 ? {

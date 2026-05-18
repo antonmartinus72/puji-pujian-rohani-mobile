@@ -15,11 +15,10 @@ import { useSongs } from '../context/SongContext';
 import { useSetlist } from '../context/SetlistContext';
 import { KEYS, getItem, setItem } from '../services/storage';
 import type { RootStackScreenProps } from '../navigation/types';
+import SongReaderMeta from '../components/SongReaderMeta';
 import {
-  formatCreditLines,
-  formatReaderTitles,
-  getPrimaryTitle,
-  getSongKeyLabel,
+  getDisplayTitleAtIndex,
+  resolveDisplayTitleIndex,
 } from '../utils/songDisplay';
 
 const MIN_FONT_SCALE = 0.85;
@@ -45,6 +44,7 @@ export default function SongReaderScreen({
     goNext,
     goPrev,
     ready,
+    readerTitleIndex,
   } = useSongs();
   const {
     activeSession,
@@ -60,6 +60,7 @@ export default function SongReaderScreen({
   const [lyricFontScale, setLyricFontScale] = useState(1);
   const [selectedLyricIndices, setSelectedLyricIndices] = useState<number[]>([]);
   const [isPinching, setIsPinching] = useState(false);
+  const [metaExpanded, setMetaExpanded] = useState(false);
   const lyricFontScaleRef = useRef(1);
   const pinchOriginScale = useRef(1);
   const scrollRef = useRef<ScrollView>(null);
@@ -87,6 +88,7 @@ export default function SongReaderScreen({
 
   useEffect(() => {
     setSelectedLyricIndices([]);
+    setMetaExpanded(false);
   }, [currentSong?.id]);
 
   const persistLyricFontScale = useCallback((value: number) => {
@@ -142,9 +144,10 @@ export default function SongReaderScreen({
 
   const selectionFullText = useMemo(() => {
     if (!currentSong || !lyricsBodyForSelection.trim()) return '';
-    const heading = `${currentSong.id}. ${getPrimaryTitle(currentSong)}`;
+    const idx = resolveDisplayTitleIndex(currentSong, readerTitleIndex);
+    const heading = `${currentSong.id}. ${getDisplayTitleAtIndex(currentSong, idx)}`;
     return `${heading}\n\n${lyricsBodyForSelection}`;
-  }, [currentSong, lyricsBodyForSelection]);
+  }, [currentSong, lyricsBodyForSelection, readerTitleIndex]);
 
   const allBlocksSelected = useMemo(() => {
     const n = currentSong?.lyrics?.length ?? 0;
@@ -182,14 +185,17 @@ export default function SongReaderScreen({
   const shareSelection = useCallback(async () => {
     if (!selectionFullText.trim()) return;
     const title = currentSong
-      ? `${currentSong.id}. ${getPrimaryTitle(currentSong)}`
+      ? `${currentSong.id}. ${getDisplayTitleAtIndex(
+          currentSong,
+          resolveDisplayTitleIndex(currentSong, readerTitleIndex)
+        )}`
       : 'Lirik';
     try {
       await Share.share({ message: selectionFullText, title });
     } catch {
       /* dibatalkan pengguna */
     }
-  }, [selectionFullText, currentSong]);
+  }, [selectionFullText, currentSong, readerTitleIndex]);
 
   const inSetlist = !!activeSession;
   const canPrev = inSetlist
@@ -322,41 +328,12 @@ export default function SongReaderScreen({
                   jari untuk zoom teks lirik. Geser kiri/kanan untuk lagu
                   berikutnya/sebelumnya.
                 </Text>
-                {formatReaderTitles(currentSong).map((line, i) => (
-                  <Text
-                    key={`title-${i}`}
-                    className={
-                      i === 0
-                        ? 'mb-1 text-[22px] font-bold text-slate-900 dark:text-slate-100'
-                        : 'mb-0.5 text-lg text-slate-600 dark:text-slate-400'
-                    }
-                  >
-                    {line}
-                  </Text>
-                ))}
-                {getSongKeyLabel(currentSong) ? (
-                  <Text className="mb-2 mt-1 text-sm text-slate-500 dark:text-slate-400">
-                    Kunci: {getSongKeyLabel(currentSong)}
-                  </Text>
-                ) : (
-                  <View className="mb-2" />
-                )}
-                {formatCreditLines(currentSong).length > 0 ? (
-                  <View className="mb-3">
-                    <Text className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                      Kredit
-                    </Text>
-                    {formatCreditLines(currentSong).map((line, i) => (
-                      <Text
-                        key={`credit-${i}`}
-                        className="text-sm leading-5 text-slate-600 dark:text-slate-400"
-                      >
-                        • {line}
-                      </Text>
-                    ))}
-                  </View>
-                ) : null}
-                <View className="mb-3 h-px max-w-[200px] bg-slate-300 dark:bg-slate-600" />
+                <SongReaderMeta
+                  song={currentSong}
+                  titleIndex={readerTitleIndex}
+                  expanded={metaExpanded}
+                  onToggle={() => setMetaExpanded((v) => !v)}
+                />
                 {(currentSong.lyrics || []).map((block, idx) => {
                   const sel = selectedSet.has(idx);
                   return (
