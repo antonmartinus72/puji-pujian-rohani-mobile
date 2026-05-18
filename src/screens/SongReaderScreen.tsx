@@ -322,9 +322,6 @@ export default function SongReaderScreen({
                   jari untuk zoom teks lirik. Geser kiri/kanan untuk lagu
                   berikutnya/sebelumnya.
                 </Text>
-                <Text className="mb-1 text-xs font-medium text-slate-500 dark:text-slate-400">
-                  {currentSong.id}.
-                </Text>
                 {formatReaderTitles(currentSong).map((line, i) => (
                   <Text
                     key={`title-${i}`}
