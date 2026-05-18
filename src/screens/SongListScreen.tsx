@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { FlatList, Pressable, Text, TextInput, View } from 'react-native';
 import { useFocusEffect, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -6,15 +6,15 @@ import { Ionicons } from '@expo/vector-icons';
 import SongCard from '../components/SongCard';
 import SearchSongRow from '../components/SearchSongRow';
 import SearchCategoryFilters from '../components/SearchCategoryFilters';
-import SearchHistoryDropdown from '../components/SearchHistoryDropdown';
+import SearchHistoryList from '../components/SearchHistoryList';
 import { useSongs } from '../context/SongContext';
 import { useSetlist } from '../context/SetlistContext';
 import { addSearchHistory, loadSearchHistory } from '../services/searchHistory';
 import {
   DEFAULT_SEARCH_CATEGORIES,
-  searchSongs,
   type SearchCategories,
 } from '../utils/search';
+import { buildListEntries } from '../utils/songListEntries';
 import type { RouteProp } from '@react-navigation/native';
 import type { RootStackParamList, RootStackScreenProps } from '../navigation/types';
 import { useThemeColors } from '../hooks/useThemeColors';
@@ -48,10 +48,9 @@ export default function SongListScreen({
     DEFAULT_SEARCH_CATEGORIES
   );
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
-  const [textFocused, setTextFocused] = useState(false);
+  const [metaExpanded, setMetaExpanded] = useState(false);
   const textInputRef = useRef<TextInput>(null);
   const numInputRef = useRef<TextInput>(null);
-  const blurTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const variant = route.params?.variant ?? 'browse';
   const showSearchExtras = variant === 'search' || variant === 'pick';
@@ -72,6 +71,7 @@ export default function SongListScreen({
       setQ('');
       setNumQ('');
       setCategories(DEFAULT_SEARCH_CATEGORIES);
+      setMetaExpanded(false);
       void refreshHistory();
       const v = route.params?.variant ?? 'browse';
       const t = setTimeout(() => {
@@ -83,36 +83,21 @@ export default function SongListScreen({
     }, [route.params?.variant, route.params?.setlistId, refreshHistory])
   );
 
-  useEffect(() => {
-    return () => {
-      if (blurTimeoutRef.current) clearTimeout(blurTimeoutRef.current);
-    };
-  }, []);
-
   const filteredHistory = useMemo(() => {
     const needle = q.trim().toLowerCase();
     if (!needle) return searchHistory;
     return searchHistory.filter((entry) => entry.toLowerCase().includes(needle));
   }, [searchHistory, q]);
 
-  const results = useMemo(() => {
-    const qTrim = q.trim();
-    const numTrim = numQ.trim();
-    const byNumber = (list: typeof songs) => {
-      if (!numTrim) return list;
-      return list.filter((s) => String(s.id).startsWith(numTrim));
-    };
-    if (qTrim && numTrim) {
-      return byNumber(searchSongs(songs, q, categories));
-    }
-    if (numTrim) {
-      return songs.filter((s) => String(s.id).startsWith(numTrim));
-    }
-    if (qTrim) {
-      return searchSongs(songs, q, categories);
-    }
-    return songs;
-  }, [songs, q, numQ, categories]);
+  const results = useMemo(
+    () =>
+      buildListEntries(songs, {
+        textQuery: q.trim(),
+        numberPrefix: numQ.trim(),
+        categories,
+      }),
+    [songs, q, numQ, categories]
+  );
 
   const showSearchRows = !!q.trim();
 
@@ -126,45 +111,24 @@ export default function SongListScreen({
     [refreshHistory]
   );
 
-  const onPickSong = (id: number) => {
+  const onPickSong = (id: number, titleIndex?: number) => {
     if (pickSetlistId) {
       addSongToSetlist(pickSetlistId, id);
       navigation.goBack();
       return;
     }
-    goToId(id);
+    goToId(id, titleIndex);
     navigation.navigate('Reader');
-  };
-
-  const onTextFocus = () => {
-    if (blurTimeoutRef.current) {
-      clearTimeout(blurTimeoutRef.current);
-      blurTimeoutRef.current = null;
-    }
-    setTextFocused(true);
-    void refreshHistory();
-  };
-
-  const onTextBlur = () => {
-    blurTimeoutRef.current = setTimeout(() => {
-      setTextFocused(false);
-    }, 180);
-  };
-
-  const onHistorySelect = (entry: string) => {
-    if (blurTimeoutRef.current) {
-      clearTimeout(blurTimeoutRef.current);
-      blurTimeoutRef.current = null;
-    }
-    setQ(entry);
-    setTextFocused(false);
-    textInputRef.current?.blur();
-    void persistSearchQuery(entry);
   };
 
   const onSearchSubmit = () => {
     void persistSearchQuery(q);
     textInputRef.current?.blur();
+  };
+
+  const onHistorySelect = (entry: string) => {
+    setQ(entry);
+    void persistSearchQuery(entry);
   };
 
   return (
@@ -187,29 +151,36 @@ export default function SongListScreen({
           {songs.length} lagu
         </Text>
       </View>
-      <View className="relative z-10">
-        <TextInput
-          ref={textInputRef}
-          value={q}
-          onChangeText={setQ}
-          onFocus={onTextFocus}
-          onBlur={onTextBlur}
-          onSubmitEditing={onSearchSubmit}
-          placeholder="Judul atau lirik…"
-          placeholderTextColor="#94a3b8"
-          className="mx-4 mt-3 rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-base text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
-          returnKeyType="search"
-        />
-        {showSearchExtras ? (
-          <SearchHistoryDropdown
-            visible={textFocused && filteredHistory.length > 0}
-            entries={filteredHistory}
-            onSelect={onHistorySelect}
-          />
-        ) : null}
-      </View>
+      <TextInput
+        ref={textInputRef}
+        value={q}
+        onChangeText={setQ}
+        onSubmitEditing={onSearchSubmit}
+        placeholder="Judul atau lirik…"
+        placeholderTextColor="#94a3b8"
+        className="mx-4 mt-3 rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-base text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+        returnKeyType="search"
+      />
       {showSearchExtras ? (
-        <SearchCategoryFilters categories={categories} onChange={setCategories} />
+        <Pressable
+          onPress={() => setMetaExpanded((v) => !v)}
+          className="mx-4 mb-1 mt-2 flex-row items-center gap-1"
+        >
+          <Ionicons
+            name={metaExpanded ? 'chevron-up' : 'chevron-down'}
+            size={18}
+            color={colors.iconBack}
+          />
+          <Text className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+            {metaExpanded ? 'Sembunyikan opsi pencarian' : 'Tampilkan opsi pencarian'}
+          </Text>
+        </Pressable>
+      ) : null}
+      {showSearchExtras && metaExpanded ? (
+        <>
+          <SearchHistoryList entries={filteredHistory} onSelect={onHistorySelect} />
+          <SearchCategoryFilters categories={categories} onChange={setCategories} />
+        </>
       ) : null}
       <TextInput
         ref={numInputRef}
@@ -224,25 +195,24 @@ export default function SongListScreen({
       />
       <FlatList
         data={results}
-        keyExtractor={(item) => String(item.id)}
+        keyExtractor={(item) => item.listKey}
         keyboardShouldPersistTaps="handled"
-        onScrollBeginDrag={() => setTextFocused(false)}
         renderItem={({ item }) =>
           showSearchRows ? (
             <SearchSongRow
-              song={item}
+              entry={item}
               textQuery={q.trim()}
-              active={!!currentSong && item.id === currentSong.id}
+              active={!!currentSong && item.song.id === currentSong.id}
               onPress={() => {
                 void persistSearchQuery(q);
-                onPickSong(item.id);
+                onPickSong(item.song.id, item.titleIndex);
               }}
             />
           ) : (
             <SongCard
-              song={item}
-              highlight={!!currentSong && item.id === currentSong.id}
-              onPress={() => onPickSong(item.id)}
+              entry={item}
+              highlight={!!currentSong && item.song.id === currentSong.id}
+              onPress={() => onPickSong(item.song.id, item.titleIndex)}
             />
           )
         }

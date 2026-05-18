@@ -70,3 +70,54 @@ export function formatKeySignature(
 export function getSongKeyLabel(song: Song): string | null {
   return formatKeySignature(song.rootNote, song.scaleType);
 }
+
+export function countNonEmptyTitles(song: Song): number {
+  return (song.title || []).filter((t) => (t || '').trim().length > 0).length;
+}
+
+/** Muted list hint when other alternate titles exist, e.g. "+2 judul". */
+export function formatOtherTitlesHint(
+  song: Song,
+  _currentTitleIndex: number
+): string | null {
+  const total = countNonEmptyTitles(song);
+  if (total <= 1) return null;
+  return `+${total - 1} judul`;
+}
+
+/** Preferred array index, or first non-empty slot, or 0. */
+export function resolveDisplayTitleIndex(song: Song, preferredIndex: number): number {
+  const titles = song.title || [];
+  if (
+    preferredIndex >= 0 &&
+    preferredIndex < titles.length &&
+    (titles[preferredIndex] || '').trim()
+  ) {
+    return preferredIndex;
+  }
+  for (let i = 0; i < titles.length; i++) {
+    if ((titles[i] || '').trim()) return i;
+  }
+  return 0;
+}
+
+export function getDisplayTitleAtIndex(song: Song, index: number): string {
+  const titles = song.title || [];
+  const trimmed = (titles[index] || '').trim();
+  if (trimmed) return trimmed;
+  return getPrimaryTitle(song);
+}
+
+export function getAlternateTitleEntries(
+  song: Song,
+  activeIndex: number
+): { text: string; index: number }[] {
+  const out: { text: string; index: number }[] = [];
+  (song.title || []).forEach((t, index) => {
+    const trimmed = (t || '').trim();
+    if (trimmed && index !== activeIndex) {
+      out.push({ text: trimmed, index });
+    }
+  });
+  return out;
+}

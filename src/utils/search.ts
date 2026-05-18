@@ -186,12 +186,16 @@ export interface SearchSnippet {
   matchKind: SearchSnippetMatchKind;
 }
 
-export function getSearchSnippet(song: Song, queryRaw: string): SearchSnippet {
+export function getSearchSnippet(
+  song: Song,
+  queryRaw: string,
+  displayTitle?: string
+): SearchSnippet {
   const q = normalize(queryRaw);
-  const primaryTitle = getPrimaryTitle(song);
+  const rowTitle = displayTitle ?? getPrimaryTitle(song);
   const titleParts = q
-    ? splitMatchParts(primaryTitle, q)
-    : [{ text: primaryTitle, highlight: false }];
+    ? splitMatchParts(rowTitle, q)
+    : [{ text: rowTitle, highlight: false }];
 
   if (!q) {
     const line = firstPlainLyricLine(song);
@@ -211,7 +215,9 @@ export function getSearchSnippet(song: Song, queryRaw: string): SearchSnippet {
     };
   }
 
-  const inTitle = titleHasMatch(song, q);
+  const inTitle = displayTitle
+    ? normalize(displayTitle).includes(q)
+    : titleHasMatch(song, q);
   const inCredit = creditHasMatch(song, q);
   const inLyric = lyricHasMatch(song, q);
 

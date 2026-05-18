@@ -28,8 +28,32 @@ import { dbSongsKey, getDynamicItem } from '../services/storage';
 import { checkForUpdate, downloadUpdate } from '../services/updater';
 import type { RemoteVersionPayload } from '../services/updater';
 import { normalizeSongsPayload } from '../utils/normalizeSong';
-import { isSongsPayload } from '../utils/songsPayload';
+import {
+  formatValidationErrors,
+  validateSongsPayload,
+} from '../utils/validateSongsPayload';
 import type { Song, SongsPayload } from '../types/songs';
+
+export async function validateProfileSongsSource(
+  profile: DatabaseProfile
+): Promise<string | null> {
+  const raw = await getDynamicItem(dbSongsKey(profile.id));
+  let parsed: unknown;
+  if (raw) {
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      return 'Cache database tidak dapat dibaca (JSON rusak).';
+    }
+  } else if (profile.kind === 'default') {
+    parsed = bundledSongs;
+  } else {
+    return null;
+  }
+  const result = validateSongsPayload(parsed);
+  if (!result.ok) return formatValidationErrors(result.errors);
+  return null;
+}
 
 function sortSongsById(songs: Song[] | undefined): Song[] {
   return [...(songs || [])].sort((a, b) => (a.id ?? 0) - (b.id ?? 0));
@@ -46,9 +70,10 @@ export interface SongContextValue {
   ready: boolean;
   currentSong: Song | null;
   currentIndex: number;
+  readerTitleIndex: number;
   goNext: () => void;
   goPrev: () => void;
-  goToId: (id: number) => void;
+  goToId: (id: number, titleIndex?: number) => void;
   goToIndex: (index: number) => void;
   applyPayload: (data: SongsPayload) => void;
   activeProfile: DatabaseProfile;
@@ -67,6 +92,8 @@ export interface SongContextValue {
   dismissUpdateBanner: () => void;
   startupUpdateOffer: StartupUpdateOffer | null;
   clearStartupUpdateOffer: () => void;
+  profileLoadErrors: Record<DatabaseId, string | null>;
+  refreshProfileValidation: () => Promise<void>;
 }
 
 const SongContext = createContext<SongContextValue | null>(null);
@@ -78,6 +105,7 @@ export function SongProvider({ children }: { children: ReactNode }) {
     updatedAt: (bundledSongs as SongsPayload).updatedAt ?? '',
   });
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [readerTitleIndex, setReaderTitleIndex] = useState(0);
   const [ready, setReady] = useState(false);
   const [registryReady, setRegistryReady] = useState(false);
   const [registry, setRegistry] = useState<DatabaseRegistryState | null>(null);
@@ -87,6 +115,9 @@ export function SongProvider({ children }: { children: ReactNode }) {
   );
   const [startupUpdateOffer, setStartupUpdateOffer] =
     useState<StartupUpdateOffer | null>(null);
+  const [profileLoadErrors, setProfileLoadErrors] = useState<
+    Record<DatabaseId, string | null>
+  >({});
   const startupToastShown = useRef(false);
 
   const activeProfile = useMemo(() => {
@@ -97,7 +128,11 @@ export function SongProvider({ children }: { children: ReactNode }) {
   const profiles = registry?.profiles ?? [];
 
   const applyPayload = useCallback((data: SongsPayload) => {
-    const normalized = normalizeSongsPayload(data);
+    const result = validateSongsPayload(data);
+    if (!result.ok) {
+      throw new Error(formatValidationErrors(result.errors));
+    }
+    const normalized = normalizeSongsPayload(result.data);
     const list = sortSongsById(normalized.songs);
     setSongs(list);
     setMeta({
@@ -105,16 +140,38 @@ export function SongProvider({ children }: { children: ReactNode }) {
       updatedAt: normalized.updatedAt ?? '',
     });
     setCurrentIndex(0);
+    setReaderTitleIndex(0);
   }, []);
 
   const loadProfileSongs = useCallback(
     async (profile: DatabaseProfile): Promise<boolean> => {
+      const validationError = await validateProfileSongsSource(profile);
+      setProfileLoadErrors((prev) => ({
+        ...prev,
+        [profile.id]: validationError,
+      }));
+
+      if (validationError) {
+        setSongs([]);
+        setMeta({ version: '0.0.0', updatedAt: '' });
+        setCurrentIndex(0);
+        return false;
+      }
+
       const raw = await getDynamicItem(dbSongsKey(profile.id));
       if (raw) {
         try {
           const parsed: unknown = JSON.parse(raw);
-          if (isSongsPayload(parsed)) {
-            applyPayload(parsed);
+          const result = validateSongsPayload(parsed);
+          if (result.ok) {
+            const normalized = normalizeSongsPayload(result.data);
+            const list = sortSongsById(normalized.songs);
+            setSongs(list);
+            setMeta({
+              version: normalized.version ?? '1.0.0',
+              updatedAt: normalized.updatedAt ?? '',
+            });
+            setCurrentIndex(0);
             return true;
           }
         } catch {
@@ -122,14 +179,43 @@ export function SongProvider({ children }: { children: ReactNode }) {
         }
       }
       if (profile.kind === 'default') {
-        applyPayload(bundledSongs as SongsPayload);
-        return true;
+        const result = validateSongsPayload(bundledSongs);
+        if (result.ok) {
+          const normalized = normalizeSongsPayload(result.data);
+          const list = sortSongsById(normalized.songs);
+          setSongs(list);
+          setMeta({
+            version: normalized.version ?? '1.0.0',
+            updatedAt: normalized.updatedAt ?? '',
+          });
+          setCurrentIndex(0);
+          return true;
+        }
+        setProfileLoadErrors((prev) => ({
+          ...prev,
+          [profile.id]: formatValidationErrors(
+            result.ok ? [] : result.errors
+          ),
+        }));
+        setSongs([]);
+        return false;
       }
-      applyPayload({ version: '0.0.0', songs: [] });
+      setSongs([]);
+      setMeta({ version: '0.0.0', updatedAt: '' });
+      setCurrentIndex(0);
       return false;
     },
-    [applyPayload]
+    []
   );
+
+  const refreshProfileValidation = useCallback(async () => {
+    if (!registry) return;
+    const next: Record<DatabaseId, string | null> = {};
+    for (const profile of registry.profiles) {
+      next[profile.id] = await validateProfileSongsSource(profile);
+    }
+    setProfileLoadErrors(next);
+  }, [registry]);
 
   const refreshRegistry = useCallback(async () => {
     const state = await loadRegistry();
@@ -227,11 +313,11 @@ export function SongProvider({ children }: { children: ReactNode }) {
     await clearProfileCache('default');
     const profile = getProfile(registry ?? { activeId: 'default', profiles: [] }, 'default');
     if (profile && registry?.activeId === 'default') {
-      applyPayload(bundledSongs as SongsPayload);
+      await loadProfileSongs(profile);
     }
     setPendingUpdate(null);
     if (profile) void runVersionCheck(profile);
-  }, [registry, applyPayload, runVersionCheck]);
+  }, [registry, loadProfileSongs, runVersionCheck]);
 
   useEffect(() => {
     let cancelled = false;
@@ -269,14 +355,18 @@ export function SongProvider({ children }: { children: ReactNode }) {
       if (!songs.length) return;
       const i = Math.max(0, Math.min(index, songs.length - 1));
       setCurrentIndex(i);
+      setReaderTitleIndex(0);
     },
     [songs.length]
   );
 
   const goToId = useCallback(
-    (id: number) => {
+    (id: number, titleIndex?: number) => {
       const idx = songs.findIndex((s) => Number(s.id) === Number(id));
-      if (idx >= 0) setCurrentIndex(idx);
+      if (idx >= 0) {
+        setCurrentIndex(idx);
+        setReaderTitleIndex(titleIndex ?? 0);
+      }
     },
     [songs]
   );
@@ -301,6 +391,7 @@ export function SongProvider({ children }: { children: ReactNode }) {
       ready,
       currentSong,
       currentIndex,
+      readerTitleIndex,
       goNext,
       goPrev,
       goToId,
@@ -322,6 +413,8 @@ export function SongProvider({ children }: { children: ReactNode }) {
       dismissUpdateBanner,
       startupUpdateOffer,
       clearStartupUpdateOffer,
+      profileLoadErrors,
+      refreshProfileValidation,
     }),
     [
       songs,
@@ -329,6 +422,7 @@ export function SongProvider({ children }: { children: ReactNode }) {
       ready,
       currentSong,
       currentIndex,
+      readerTitleIndex,
       goNext,
       goPrev,
       goToId,
@@ -350,6 +444,8 @@ export function SongProvider({ children }: { children: ReactNode }) {
       dismissUpdateBanner,
       startupUpdateOffer,
       clearStartupUpdateOffer,
+      profileLoadErrors,
+      refreshProfileValidation,
     ]
   );
 

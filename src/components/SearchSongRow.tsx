@@ -1,27 +1,29 @@
 import React, { useMemo } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import type { Song } from '../types/songs';
+import type { SongListEntry } from '../utils/songListEntries';
+import { formatOtherTitlesHint } from '../utils/songDisplay';
 import { getSearchSnippet } from '../utils/search';
 
 export interface SearchSongRowProps {
-  song: Song;
+  entry: SongListEntry;
   textQuery: string;
   active: boolean;
   onPress: () => void;
 }
 
 export default function SearchSongRow({
-  song,
+  entry,
   textQuery,
   active,
   onPress,
 }: SearchSongRowProps) {
   const snippet = useMemo(
-    () => getSearchSnippet(song, textQuery ?? ''),
-    [song, textQuery]
+    () => getSearchSnippet(entry.song, textQuery ?? '', entry.displayTitle),
+    [entry, textQuery]
   );
 
   const isCreditSnippet = snippet.matchKind === 'credit';
+  const otherHint = formatOtherTitlesHint(entry.song, entry.titleIndex);
 
   return (
     <Pressable
@@ -29,7 +31,7 @@ export default function SearchSongRow({
       className={`flex-row items-start border-b border-slate-200 px-3.5 py-3 dark:border-slate-700 ${active ? 'bg-blue-50 dark:bg-blue-950' : ''}`}
     >
       <Text className="w-11 pt-0.5 text-base font-semibold text-slate-500 dark:text-slate-400">
-        {song.id}.
+        {entry.song.id}.
       </Text>
       <View className="min-w-0 flex-1">
         <Text
@@ -49,6 +51,9 @@ export default function SearchSongRow({
             </Text>
           ))}
         </Text>
+        {otherHint ? (
+          <Text className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{otherHint}</Text>
+        ) : null}
         {snippet.secondaryParts && snippet.secondaryParts.length > 0 ? (
           <Text className="mt-1.5 text-sm leading-5" numberOfLines={3}>
             {snippet.secondaryEllipsLeft ? (
