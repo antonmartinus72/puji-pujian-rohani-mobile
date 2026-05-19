@@ -3,8 +3,9 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 export type RootStackParamList = {
   Reader: undefined;
   SongList: {
-    variant?: 'browse' | 'search' | 'number' | 'pick';
+    variant?: 'list' | 'pick';
     setlistId?: string;
+    focusNumber?: boolean;
   };
   Setlists: undefined;
   SetlistDetail: { setlistId: string };

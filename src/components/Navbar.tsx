@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTopInset } from '../hooks/useTopInset';
 import { Ionicons } from '@expo/vector-icons';
 
 export interface NavbarProps {
@@ -12,6 +12,7 @@ export interface NavbarProps {
   onNumberPress: () => void;
   canPrev: boolean;
   canNext: boolean;
+  includeTopSafeArea?: boolean;
 }
 
 export default function Navbar({
@@ -23,15 +24,16 @@ export default function Navbar({
   onNumberPress,
   canPrev,
   canNext,
+  includeTopSafeArea = true,
 }: NavbarProps) {
-  const insets = useSafeAreaInsets();
+  const topInset = useTopInset();
   const iconColor = '#f8fafc';
   const disabledColor = 'rgba(248,250,252,0.35)';
 
   return (
     <View
       className="flex-row items-center justify-between border-b border-navBorder bg-nav px-1.5 pb-2.5"
-      style={{ paddingTop: Math.max(insets.top, 8) }}
+      style={{ paddingTop: (includeTopSafeArea ? topInset : 0) + 8 }}
     >
       <Pressable
         onPress={onMenu}

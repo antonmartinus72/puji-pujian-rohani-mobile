@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTopInset } from '../hooks/useTopInset';
 import { Ionicons } from '@expo/vector-icons';
 import type { ComponentProps } from 'react';
 import { useTheme } from '../context/ThemeContext';
@@ -59,6 +60,7 @@ function MenuRow({
 export interface SidebarProps {
   visible: boolean;
   onClose: () => void;
+  onOpenHome?: () => void;
   onOpenSongList?: () => void;
   onOpenSetlists?: () => void;
   onOpenDatabase?: () => void;
@@ -68,12 +70,14 @@ export interface SidebarProps {
 export default function Sidebar({
   visible,
   onClose,
+  onOpenHome,
   onOpenSongList,
   onOpenSetlists,
   onOpenDatabase,
   onOpenSettings,
 }: SidebarProps) {
   const insets = useSafeAreaInsets();
+  const topInset = useTopInset();
   const { isDark } = useTheme();
   const colors = useThemeColors();
   const [modalShown, setModalShown] = useState(false);
@@ -137,7 +141,7 @@ export default function Sidebar({
           className="absolute bottom-0 left-0 top-0 border-r border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-800"
           style={{
             width: DRAWER_W,
-            paddingTop: insets.top + 12,
+            paddingTop: topInset + 12,
             paddingBottom: insets.bottom + 16,
             transform: [{ translateX }],
             shadowColor: '#000',
@@ -165,9 +169,20 @@ export default function Sidebar({
           </Text>
 
           <MenuRow
+            icon="home-outline"
+            label="Menu Utama"
+            subtitle="Kembali ke pembaca lagu"
+            iconMenu={colors.iconMenu}
+            iconChevron={colors.iconMuted}
+            onPress={() => {
+              onClose();
+              onOpenHome?.();
+            }}
+          />
+          <MenuRow
             icon="list-outline"
             label="Daftar Lagu"
-            subtitle="Semua lagu, cari judul/lirik, atau saring nomor"
+            subtitle="Cari, urutkan, dan saring lagu"
             iconMenu={colors.iconMenu}
             iconChevron={colors.iconMuted}
             onPress={() => {

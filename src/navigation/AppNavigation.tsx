@@ -46,7 +46,8 @@ export default function AppNavigation() {
           screenOptions={{
             headerShown: false,
             contentStyle: { backgroundColor: colors.background },
-            animation: 'slide_from_right',
+            animation: 'fade',
+            animationDuration: 180,
           }}
         >
           <Stack.Screen name="Reader" component={SongReaderScreen} />

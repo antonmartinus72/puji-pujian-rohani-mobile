@@ -8,8 +8,10 @@ import {
   ScrollView,
 } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTopInset } from '../hooks/useTopInset';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
+import { useAppSidebar } from '../hooks/useAppSidebar';
 import LyricBlock, { formatLyricBlockPlainText } from '../components/LyricBlock';
 import { useSongs } from '../context/SongContext';
 import { useSetlist } from '../context/SetlistContext';
@@ -56,7 +58,8 @@ export default function SongReaderScreen({
     canSessionPrev,
   } = useSetlist();
   const insets = useSafeAreaInsets();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const topInset = useTopInset();
+  const sidebar = useAppSidebar(navigation);
   const [lyricFontScale, setLyricFontScale] = useState(1);
   const [selectedLyricIndices, setSelectedLyricIndices] = useState<number[]>([]);
   const [isPinching, setIsPinching] = useState(false);
@@ -255,11 +258,11 @@ export default function SongReaderScreen({
   );
 
   const openSongListSearch = useCallback(() => {
-    navigation.navigate('SongList', { variant: 'search' });
+    navigation.navigate('SongList', { variant: 'list' });
   }, [navigation]);
 
   const openSongListNumber = useCallback(() => {
-    navigation.navigate('SongList', { variant: 'number' });
+    navigation.navigate('SongList', { variant: 'list', focusNumber: true });
   }, [navigation]);
 
   if (!ready || !currentSong) {
@@ -276,7 +279,10 @@ export default function SongReaderScreen({
   return (
     <View className="flex-1 bg-slate-50 dark:bg-slate-900">
       {inSetlist && activeSetlistName ? (
-        <View className="flex-row items-center justify-between border-b border-emerald-200 bg-emerald-50 px-3.5 py-2">
+        <View
+          className="flex-row items-center justify-between border-b border-emerald-200 bg-emerald-50 px-3.5 py-2"
+          style={{ paddingTop: topInset }}
+        >
           <View className="mr-3 min-w-0 flex-1">
             <Text className="text-[11px] font-bold uppercase tracking-wide text-emerald-600">
               Mode setlist
@@ -294,8 +300,9 @@ export default function SongReaderScreen({
         </View>
       ) : null}
       <Navbar
+        includeTopSafeArea={!(inSetlist && activeSetlistName)}
         songNumber={currentSong.id}
-        onMenu={() => setSidebarOpen(true)}
+        onMenu={sidebar.open}
         onPrev={onPrev}
         onNext={onNext}
         onSearch={openSongListSearch}
@@ -401,16 +408,7 @@ export default function SongReaderScreen({
         </View>
       ) : null}
 
-      <Sidebar
-        visible={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        onOpenSongList={() =>
-          navigation.navigate('SongList', { variant: 'browse' })
-        }
-        onOpenSetlists={() => navigation.navigate('Setlists')}
-        onOpenDatabase={() => navigation.navigate('Database')}
-        onOpenSettings={() => navigation.navigate('Settings')}
-      />
+      <Sidebar {...sidebar.props} />
     </View>
   );
 }

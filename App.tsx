@@ -3,7 +3,10 @@ import './src/lib/nativewindSetup';
 import React from 'react';
 import Toast from 'react-native-toast-message';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import {
+  initialWindowMetrics,
+  SafeAreaProvider,
+} from 'react-native-safe-area-context';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { SongProvider } from './src/context/SongContext';
 import { SetlistProvider } from './src/context/SetlistContext';
@@ -20,7 +23,7 @@ function AppRoot() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
-      <SafeAreaProvider>
+      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
         <SongProvider>
           <UpdateModalProvider>
             <SetlistProvider>

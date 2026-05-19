@@ -13,6 +13,49 @@ export interface SongListEntry {
   titleIndex: number;
 }
 
+export type SortMode = 'id' | 'title';
+
+export function collectAllTags(songs: Song[]): string[] {
+  const set = new Set<string>();
+  for (const song of songs) {
+    for (const tag of song.tags ?? []) {
+      const t = tag.trim();
+      if (t) set.add(t);
+    }
+  }
+  return [...set].sort((a, b) => a.localeCompare(b, 'id'));
+}
+
+export function filterSongsByTags(songs: Song[], selectedTags: string[]): Song[] {
+  if (selectedTags.length === 0) return songs;
+  const wanted = selectedTags.map((t) => t.toLowerCase());
+  return songs.filter((song) => {
+    const songTags = (song.tags ?? []).map((t) => t.trim().toLowerCase());
+    return wanted.every((tag) => songTags.includes(tag));
+  });
+}
+
+export function sortListEntries(
+  entries: SongListEntry[],
+  mode: SortMode
+): SongListEntry[] {
+  const copy = [...entries];
+  if (mode === 'id') {
+    return copy.sort(
+      (a, b) =>
+        a.song.id - b.song.id ||
+        a.titleIndex - b.titleIndex ||
+        a.displayTitle.localeCompare(b.displayTitle, 'id')
+    );
+  }
+  return copy.sort(
+    (a, b) =>
+      a.displayTitle.localeCompare(b.displayTitle, 'id', { sensitivity: 'base' }) ||
+      a.song.id - b.song.id ||
+      a.titleIndex - b.titleIndex
+  );
+}
+
 function normalizeQuery(q: string): string {
   return q.toLowerCase().trim();
 }
@@ -147,25 +190,28 @@ export function buildListEntries(
     textQuery?: string;
     categories?: SearchCategories;
     numberPrefix?: string;
+    selectedTags?: string[];
+    sortMode?: SortMode;
   }
 ): SongListEntry[] {
   const numTrim = (options.numberPrefix ?? '').trim();
   const qTrim = (options.textQuery ?? '').trim();
 
-  let filtered = songs;
+  let filtered = filterSongsByTags(songs, options.selectedTags ?? []);
   if (numTrim) {
     filtered = filtered.filter((s) => String(s.id).startsWith(numTrim));
   }
 
+  let entries: SongListEntry[];
   if (qTrim && numTrim) {
-    const matched = searchSongEntries(filtered, qTrim, options.categories);
-    return matched;
+    entries = searchSongEntries(filtered, qTrim, options.categories);
+  } else if (numTrim && !qTrim) {
+    entries = expandSongsToEntries(filtered);
+  } else if (qTrim) {
+    entries = searchSongEntries(filtered, qTrim, options.categories);
+  } else {
+    entries = expandSongsToEntries(filtered);
   }
-  if (numTrim && !qTrim) {
-    return expandSongsToEntries(filtered);
-  }
-  if (qTrim) {
-    return searchSongEntries(filtered, qTrim, options.categories);
-  }
-  return expandSongsToEntries(filtered);
+
+  return sortListEntries(entries, options.sortMode ?? 'id');
 }
