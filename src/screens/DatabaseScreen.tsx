@@ -12,6 +12,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import ConfirmModal from '../components/ConfirmModal';
 import DatabaseProfileAccordion from '../components/DatabaseProfileAccordion';
+import AppNavbar from '../components/AppNavbar';
+import Sidebar from '../components/Sidebar';
+import { useAppSidebar } from '../hooks/useAppSidebar';
 import { useTheme } from '../context/ThemeContext';
 import { useThemeColors } from '../hooks/useThemeColors';
 import { useSongs } from '../context/SongContext';
@@ -26,6 +29,7 @@ export default function DatabaseScreen({
   navigation,
 }: RootStackScreenProps<'Database'>) {
   const insets = useSafeAreaInsets();
+  const sidebar = useAppSidebar(navigation);
   const {
     songs,
     meta,
@@ -221,28 +225,11 @@ export default function DatabaseScreen({
   }
 
   return (
-    <View
-      className="flex-1 bg-slate-50 dark:bg-slate-900"
-      style={{ paddingTop: insets.top }}
-    >
-      <View className="border-b border-slate-200 bg-white px-4 pb-3 dark:border-slate-700 dark:bg-slate-800">
-        <Pressable
-          onPress={() => navigation.goBack()}
-          hitSlop={10}
-          className="mb-2 flex-row items-center gap-0.5"
-        >
-          <Ionicons name="chevron-back" size={22} color="#2563eb" />
-          <Text className="text-base font-semibold text-blue-600 dark:text-blue-400">
-            Kembali
-          </Text>
-        </Pressable>
-        <Text className="text-[22px] font-bold text-slate-900 dark:text-slate-100">
-          Database
-        </Text>
-        <Text className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          Kelola sumber data lagu dan pembaruan dari GitHub
-        </Text>
-      </View>
+    <View className="flex-1 bg-slate-50 dark:bg-slate-900">
+      <AppNavbar title="Database" onMenu={sidebar.open} />
+      <Text className="px-4 py-2 text-sm text-slate-500 dark:text-slate-400">
+        Kelola sumber data lagu dan pembaruan dari GitHub
+      </Text>
 
       <ScrollView
         className="flex-1"
@@ -420,6 +407,8 @@ export default function DatabaseScreen({
         onConfirm={() => confirm?.onConfirm()}
         onCancel={() => setConfirm(null)}
       />
+
+      <Sidebar {...sidebar.props} />
     </View>
   );
 }

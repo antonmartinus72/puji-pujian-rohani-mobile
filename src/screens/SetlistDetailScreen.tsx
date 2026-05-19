@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import ScreenHeader from '../components/ScreenHeader';
 import { useSongs } from '../context/SongContext';
 import { useSetlist } from '../context/SetlistContext';
 import type { RootStackScreenProps } from '../navigation/types';
@@ -43,18 +44,12 @@ export default function SetlistDetailScreen({
 
   if (!setlistId || !setlist) {
     return (
-      <View
-        className="flex-1 bg-slate-50 dark:bg-slate-900"
-        style={{ paddingTop: insets.top }}
-      >
-        <Text className="mt-10 text-center text-base text-slate-500 dark:text-slate-400">
-          Setlist tidak ditemukan.
-        </Text>
-        <Pressable onPress={() => navigation.goBack()}>
-          <Text className="mt-3 text-center text-base font-semibold text-blue-600">
-            Kembali
-          </Text>
-        </Pressable>
+      <View className="flex-1 bg-slate-50 dark:bg-slate-900">
+        <ScreenHeader
+          title="Setlist"
+          subtitle="Setlist tidak ditemukan"
+          onBack={() => navigation.goBack()}
+        />
       </View>
     );
   }
@@ -107,27 +102,20 @@ export default function SetlistDetailScreen({
   });
 
   return (
-    <View className="flex-1 bg-slate-50 dark:bg-slate-900" style={{ paddingTop: insets.top }}>
-      <View className="border-b border-slate-200 bg-white px-4 pb-3 dark:border-slate-700 dark:bg-slate-800">
-        <Pressable
-          onPress={() => navigation.goBack()}
-          hitSlop={10}
-          className="mb-2.5 flex-row items-center gap-0.5"
-        >
-          <Ionicons name="chevron-back" size={22} color="#2563eb" />
-          <Text className="text-base font-semibold text-blue-600 dark:text-blue-400">
-            Kembali
-          </Text>
-        </Pressable>
+    <View className="flex-1 bg-slate-50 dark:bg-slate-900">
+      <ScreenHeader onBack={() => navigation.goBack()}>
         <TextInput
           value={name}
           onChangeText={setName}
           onEndEditing={onSaveName}
           onSubmitEditing={onSaveName}
-          className="rounded-[10px] border border-slate-200 px-3 py-2.5 text-xl font-bold text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+          className="rounded-[10px] border border-slate-200 px-3 py-2.5 text-[22px] font-bold text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
           placeholder="Nama setlist"
+          placeholderTextColor="#94a3b8"
         />
-        <Text className="mt-2 text-xs text-slate-400 dark:text-slate-500">
+      </ScreenHeader>
+      <View className="border-b border-slate-200 bg-white px-4 pb-3 dark:border-slate-700 dark:bg-slate-800">
+        <Text className="text-xs text-slate-400 dark:text-slate-500">
           Urutan: atas ke bawah. Gunakan panah naik/turun untuk menggeser.
         </Text>
       </View>

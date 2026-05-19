@@ -3,34 +3,30 @@ import { FlatList, Pressable, Text, TextInput, View } from 'react-native';
 import { useFocusEffect, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import AppNavbar from '../components/AppNavbar';
+import Sidebar from '../components/Sidebar';
 import SongCard from '../components/SongCard';
 import SearchSongRow from '../components/SearchSongRow';
 import SearchCategoryFilters from '../components/SearchCategoryFilters';
 import SearchHistoryList from '../components/SearchHistoryList';
+import SearchTagFilters from '../components/SearchTagFilters';
+import SortByControl from '../components/SortByControl';
 import { useSongs } from '../context/SongContext';
 import { useSetlist } from '../context/SetlistContext';
+import { useAppSidebar } from '../hooks/useAppSidebar';
 import { addSearchHistory, loadSearchHistory } from '../services/searchHistory';
 import {
   DEFAULT_SEARCH_CATEGORIES,
   type SearchCategories,
 } from '../utils/search';
-import { buildListEntries } from '../utils/songListEntries';
+import {
+  buildListEntries,
+  collectAllTags,
+  type SortMode,
+} from '../utils/songListEntries';
 import type { RouteProp } from '@react-navigation/native';
 import type { RootStackParamList, RootStackScreenProps } from '../navigation/types';
 import { useThemeColors } from '../hooks/useThemeColors';
-
-function screenTitleForVariant(
-  variant: 'browse' | 'search' | 'number' | 'pick' | undefined
-) {
-  switch (variant) {
-    case 'search':
-      return 'Cari Lagu';
-    case 'pick':
-      return 'Pilih Lagu';
-    default:
-      return 'Daftar Lagu';
-  }
-}
 
 type SongListRoute = RouteProp<RootStackParamList, 'SongList'>;
 
@@ -42,8 +38,12 @@ export default function SongListScreen({
   const { addSongToSetlist } = useSetlist();
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
+  const sidebar = useAppSidebar(navigation);
+
   const [q, setQ] = useState('');
   const [numQ, setNumQ] = useState('');
+  const [sortMode, setSortMode] = useState<SortMode>('id');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [categories, setCategories] = useState<SearchCategories>(
     DEFAULT_SEARCH_CATEGORIES
   );
@@ -52,14 +52,14 @@ export default function SongListScreen({
   const textInputRef = useRef<TextInput>(null);
   const numInputRef = useRef<TextInput>(null);
 
-  const variant = route.params?.variant ?? 'browse';
-  const showSearchExtras = variant === 'search' || variant === 'pick';
+  const variant = route.params?.variant ?? 'list';
+  const isPick = variant === 'pick';
   const pickSetlistId =
-    variant === 'pick' && route.params?.setlistId
-      ? route.params.setlistId
-      : undefined;
+    isPick && route.params?.setlistId ? route.params.setlistId : undefined;
 
-  const screenTitle = screenTitleForVariant(variant);
+  const screenTitle = isPick ? 'Pilih Lagu' : 'Daftar Lagu';
+
+  const allTags = useMemo(() => collectAllTags(songs), [songs]);
 
   const refreshHistory = useCallback(async () => {
     const items = await loadSearchHistory();
@@ -70,17 +70,18 @@ export default function SongListScreen({
     useCallback(() => {
       setQ('');
       setNumQ('');
+      setSortMode('id');
+      setSelectedTags([]);
       setCategories(DEFAULT_SEARCH_CATEGORIES);
       setMetaExpanded(false);
       void refreshHistory();
-      const v = route.params?.variant ?? 'browse';
       const t = setTimeout(() => {
-        if (v === 'search') textInputRef.current?.focus();
-        else if (v === 'number') numInputRef.current?.focus();
-        else if (v === 'pick') textInputRef.current?.focus();
-      }, 80);
+        if (route.params?.focusNumber) {
+          numInputRef.current?.focus();
+        }
+      }, 120);
       return () => clearTimeout(t);
-    }, [route.params?.variant, route.params?.setlistId, refreshHistory])
+    }, [route.params?.focusNumber, route.params?.setlistId, refreshHistory])
   );
 
   const filteredHistory = useMemo(() => {
@@ -95,8 +96,10 @@ export default function SongListScreen({
         textQuery: q.trim(),
         numberPrefix: numQ.trim(),
         categories,
+        selectedTags,
+        sortMode,
       }),
-    [songs, q, numQ, categories]
+    [songs, q, numQ, categories, selectedTags, sortMode]
   );
 
   const showSearchRows = !!q.trim();
@@ -132,25 +135,25 @@ export default function SongListScreen({
   };
 
   return (
-    <View className="flex-1 bg-slate-50 dark:bg-slate-900" style={{ paddingTop: insets.top }}>
-      <View className="border-b border-slate-200 bg-white px-4 pb-3 dark:border-slate-700 dark:bg-slate-800">
-        <Pressable
-          onPress={() => navigation.goBack()}
-          hitSlop={10}
-          className="mb-2 flex-row items-center gap-0.5"
-        >
-          <Ionicons name="chevron-back" size={22} color={colors.iconBack} />
-          <Text className="text-base font-semibold text-blue-600 dark:text-blue-400">
-            Kembali
-          </Text>
-        </Pressable>
-        <Text className="text-[22px] font-bold text-slate-900 dark:text-slate-100">
-          {screenTitle}
-        </Text>
-        <Text className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          {songs.length} lagu
-        </Text>
-      </View>
+    <View className="flex-1 bg-slate-50 dark:bg-slate-900">
+      <AppNavbar
+        title={screenTitle}
+        onMenu={sidebar.open}
+        rightAction={
+          !isPick ? (
+            <Pressable
+              onPress={() => navigation.navigate('Reader')}
+              className="min-h-[48px] min-w-[48px] items-center justify-center"
+              accessibilityLabel="Menu utama"
+            >
+              <Ionicons name="home" size={26} color="#f8fafc" />
+            </Pressable>
+          ) : undefined
+        }
+      />
+      <Text className="px-4 pt-2 text-sm text-slate-500 dark:text-slate-400">
+        {songs.length} lagu
+      </Text>
       <TextInput
         ref={textInputRef}
         value={q}
@@ -158,41 +161,47 @@ export default function SongListScreen({
         onSubmitEditing={onSearchSubmit}
         placeholder="Judul atau lirik…"
         placeholderTextColor="#94a3b8"
-        className="mx-4 mt-3 rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-base text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+        className="mx-4 mt-2 rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-base text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
         returnKeyType="search"
       />
-      {showSearchExtras ? (
-        <Pressable
-          onPress={() => setMetaExpanded((v) => !v)}
-          className="mx-4 mb-1 mt-2 flex-row items-center gap-1"
-        >
-          <Ionicons
-            name={metaExpanded ? 'chevron-up' : 'chevron-down'}
-            size={18}
-            color={colors.iconBack}
-          />
-          <Text className="text-sm font-semibold text-blue-600 dark:text-blue-400">
-            {metaExpanded ? 'Sembunyikan opsi pencarian' : 'Tampilkan opsi pencarian'}
-          </Text>
-        </Pressable>
-      ) : null}
-      {showSearchExtras && metaExpanded ? (
+      <Pressable
+        onPress={() => setMetaExpanded((v) => !v)}
+        className="mx-4 mb-1 mt-2 flex-row items-center gap-1"
+      >
+        <Ionicons
+          name={metaExpanded ? 'chevron-up' : 'chevron-down'}
+          size={18}
+          color={colors.iconBack}
+        />
+        <Text className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+          {metaExpanded ? 'Sembunyikan opsi pencarian' : 'Tampilkan opsi pencarian'}
+        </Text>
+      </Pressable>
+      {metaExpanded ? (
         <>
           <SearchHistoryList entries={filteredHistory} onSelect={onHistorySelect} />
           <SearchCategoryFilters categories={categories} onChange={setCategories} />
+          <SearchTagFilters
+            tags={allTags}
+            selected={selectedTags}
+            onChange={setSelectedTags}
+          />
         </>
       ) : null}
-      <TextInput
-        ref={numInputRef}
-        value={numQ}
-        onChangeText={(t) => setNumQ(t.replace(/[^0-9]/g, ''))}
-        placeholder="Nomor lagu…"
-        placeholderTextColor="#94a3b8"
-        className="mx-4 mb-3 mt-2 rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-base text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
-        keyboardType="number-pad"
-        returnKeyType="search"
-        maxLength={8}
-      />
+      <View className="mx-4 mb-3 mt-2 flex-row items-stretch gap-2">
+        <TextInput
+          ref={numInputRef}
+          value={numQ}
+          onChangeText={(t) => setNumQ(t.replace(/[^0-9]/g, ''))}
+          placeholder="Nomor lagu…"
+          placeholderTextColor="#94a3b8"
+          className="min-h-[48px] flex-1 rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-base text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+          keyboardType="number-pad"
+          returnKeyType="search"
+          maxLength={8}
+        />
+        <SortByControl value={sortMode} onChange={setSortMode} />
+      </View>
       <FlatList
         data={results}
         keyExtractor={(item) => item.listKey}
@@ -218,11 +227,14 @@ export default function SongListScreen({
         }
         ListEmptyComponent={
           <Text className="mt-6 text-center text-slate-500 dark:text-slate-400">
-            {q.trim() || numQ.trim() ? 'Tidak ada hasil.' : 'Belum ada lagu.'}
+            {q.trim() || numQ.trim() || selectedTags.length > 0
+              ? 'Tidak ada hasil.'
+              : 'Belum ada lagu.'}
           </Text>
         }
         contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}
       />
+      <Sidebar {...sidebar.props} />
     </View>
   );
 }
