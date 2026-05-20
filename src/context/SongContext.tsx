@@ -28,6 +28,7 @@ import { dbSongsKey, getDynamicItem } from '../services/storage';
 import { checkForUpdate, downloadUpdate } from '../services/updater';
 import type { RemoteVersionPayload } from '../services/updater';
 import { normalizeSongsPayload } from '../utils/normalizeSong';
+import { buildSearchIndex, type SongSearchIndexMap } from '../utils/search';
 import {
   formatValidationErrors,
   validateSongsPayload,
@@ -66,6 +67,7 @@ export interface StartupUpdateOffer {
 
 export interface SongContextValue {
   songs: Song[];
+  searchIndex: SongSearchIndexMap;
   meta: { version: string; updatedAt: string };
   ready: boolean;
   currentSong: Song | null;
@@ -350,6 +352,17 @@ export function SongProvider({ children }: { children: ReactNode }) {
 
   const currentSong = songs[currentIndex] ?? null;
 
+  const searchIndex = useMemo(() => buildSearchIndex(songs), [songs]);
+
+  const songIdToIndex = useMemo(() => {
+    const map = new Map<number, number>();
+    songs.forEach((s, i) => map.set(s.id, i));
+    return map;
+  }, [songs]);
+
+  const currentIndexRef = useRef(currentIndex);
+  currentIndexRef.current = currentIndex;
+
   const goToIndex = useCallback(
     (index: number) => {
       if (!songs.length) return;
@@ -362,22 +375,30 @@ export function SongProvider({ children }: { children: ReactNode }) {
 
   const goToId = useCallback(
     (id: number, titleIndex?: number) => {
-      const idx = songs.findIndex((s) => Number(s.id) === Number(id));
-      if (idx >= 0) {
+      const idx = songIdToIndex.get(Number(id));
+      if (idx !== undefined) {
         setCurrentIndex(idx);
         setReaderTitleIndex(titleIndex ?? 0);
       }
     },
-    [songs]
+    [songIdToIndex]
   );
 
   const goNext = useCallback(() => {
-    goToIndex(currentIndex + 1);
-  }, [currentIndex, goToIndex]);
+    const next = currentIndexRef.current + 1;
+    if (next < songs.length) {
+      setCurrentIndex(next);
+      setReaderTitleIndex(0);
+    }
+  }, [songs.length]);
 
   const goPrev = useCallback(() => {
-    goToIndex(currentIndex - 1);
-  }, [currentIndex, goToIndex]);
+    const prev = currentIndexRef.current - 1;
+    if (prev >= 0) {
+      setCurrentIndex(prev);
+      setReaderTitleIndex(0);
+    }
+  }, [songs.length]);
 
   const dismissUpdateBanner = useCallback(() => {
     setPendingUpdate(null);
@@ -387,6 +408,7 @@ export function SongProvider({ children }: { children: ReactNode }) {
   const value = useMemo<SongContextValue>(
     () => ({
       songs,
+      searchIndex,
       meta,
       ready,
       currentSong,
@@ -418,6 +440,7 @@ export function SongProvider({ children }: { children: ReactNode }) {
     }),
     [
       songs,
+      searchIndex,
       meta,
       ready,
       currentSong,

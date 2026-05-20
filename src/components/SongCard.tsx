@@ -9,7 +9,7 @@ export interface SongCardProps {
   highlight?: boolean;
 }
 
-export default function SongCard({ entry, onPress, highlight }: SongCardProps) {
+function SongCardInner({ entry, onPress, highlight }: SongCardProps) {
   const otherHint = formatOtherTitlesHint(entry.song, entry.titleIndex);
 
   return (
@@ -31,3 +31,8 @@ export default function SongCard({ entry, onPress, highlight }: SongCardProps) {
     </Pressable>
   );
 }
+
+export default React.memo(SongCardInner, (prev, next) =>
+  prev.entry.listKey === next.entry.listKey &&
+  prev.highlight === next.highlight
+);

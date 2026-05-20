@@ -4,6 +4,7 @@ import {
   DEFAULT_SEARCH_CATEGORIES,
   ensureAtLeastOneCategory,
   type SearchCategories,
+  type SongSearchIndexMap,
 } from './search';
 
 export interface SongListEntry {
@@ -11,6 +12,7 @@ export interface SongListEntry {
   song: Song;
   displayTitle: string;
   titleIndex: number;
+  sortKey: string;
 }
 
 export type SortMode = 'id' | 'title';
@@ -45,12 +47,12 @@ export function sortListEntries(
       (a, b) =>
         a.song.id - b.song.id ||
         a.titleIndex - b.titleIndex ||
-        a.displayTitle.localeCompare(b.displayTitle, 'id')
+        (a.sortKey < b.sortKey ? -1 : a.sortKey > b.sortKey ? 1 : 0)
     );
   }
   return copy.sort(
     (a, b) =>
-      a.displayTitle.localeCompare(b.displayTitle, 'id', { sensitivity: 'base' }) ||
+      (a.sortKey < b.sortKey ? -1 : a.sortKey > b.sortKey ? 1 : 0) ||
       a.song.id - b.song.id ||
       a.titleIndex - b.titleIndex
   );
@@ -80,6 +82,7 @@ export function expandSongToEntries(song: Song): SongListEntry[] {
         song,
         displayTitle: '—',
         titleIndex: 0,
+        sortKey: '—',
       },
     ];
   }
@@ -88,6 +91,7 @@ export function expandSongToEntries(song: Song): SongListEntry[] {
     song,
     displayTitle: text,
     titleIndex: index,
+    sortKey: text.toLowerCase(),
   }));
 }
 
@@ -113,26 +117,33 @@ function titleSlotMatches(slot: string, q: string): boolean {
   return slot.toLowerCase().includes(q);
 }
 
-function judulMatches(song: Song, q: string): boolean {
+function judulMatches(song: Song, q: string, indexMap?: SongSearchIndexMap): boolean {
+  const idx = indexMap?.get(song.id);
+  if (idx) return idx.titleTextLower.includes(q);
   return getNonEmptyTitleSlots(song).some((s) => titleSlotMatches(s.text, q));
 }
 
-function lirikMatches(song: Song, q: string): boolean {
+function lirikMatches(song: Song, q: string, indexMap?: SongSearchIndexMap): boolean {
+  const idx = indexMap?.get(song.id);
+  if (idx) return idx.lyricsTextLower.includes(q);
   return songLyricsText(song).toLowerCase().includes(q);
 }
 
-function sumberKaryaMatches(song: Song, q: string): boolean {
+function sumberKaryaMatches(song: Song, q: string, indexMap?: SongSearchIndexMap): boolean {
+  const idx = indexMap?.get(song.id);
+  if (idx) return idx.creditTextLower.includes(q);
   return songCreditText(song).toLowerCase().includes(q);
 }
 
 function entriesForSearchMatch(
   song: Song,
   q: string,
-  categories: SearchCategories
+  categories: SearchCategories,
+  indexMap?: SongSearchIndexMap
 ): SongListEntry[] {
-  const inJudul = categories.judul && judulMatches(song, q);
-  const inLirik = categories.lirik && lirikMatches(song, q);
-  const inCredit = categories.sumberKarya && sumberKaryaMatches(song, q);
+  const inJudul = categories.judul && judulMatches(song, q, indexMap);
+  const inLirik = categories.lirik && lirikMatches(song, q, indexMap);
+  const inCredit = categories.sumberKarya && sumberKaryaMatches(song, q, indexMap);
 
   if (!inJudul && !inLirik && !inCredit) return [];
 
@@ -146,6 +157,7 @@ function entriesForSearchMatch(
         song,
         displayTitle: text,
         titleIndex: index,
+        sortKey: text.toLowerCase(),
       }));
     }
   }
@@ -158,6 +170,7 @@ function entriesForSearchMatch(
       song,
       displayTitle: primary,
       titleIndex: primarySlot?.index ?? 0,
+      sortKey: primary.toLowerCase(),
     },
   ];
 }
@@ -165,7 +178,8 @@ function entriesForSearchMatch(
 export function searchSongEntries(
   songs: Song[],
   query: string,
-  categories: SearchCategories = DEFAULT_SEARCH_CATEGORIES
+  categories: SearchCategories = DEFAULT_SEARCH_CATEGORIES,
+  indexMap?: SongSearchIndexMap
 ): SongListEntry[] {
   const q = normalizeQuery(query);
   if (!q) return expandSongsToEntries(songs);
@@ -175,7 +189,7 @@ export function searchSongEntries(
   const seen = new Set<string>();
 
   for (const song of songs) {
-    for (const entry of entriesForSearchMatch(song, q, cats)) {
+    for (const entry of entriesForSearchMatch(song, q, cats, indexMap)) {
       if (seen.has(entry.listKey)) continue;
       seen.add(entry.listKey);
       out.push(entry);
@@ -192,6 +206,7 @@ export function buildListEntries(
     numberPrefix?: string;
     selectedTags?: string[];
     sortMode?: SortMode;
+    indexMap?: SongSearchIndexMap;
   }
 ): SongListEntry[] {
   const numTrim = (options.numberPrefix ?? '').trim();
@@ -203,12 +218,8 @@ export function buildListEntries(
   }
 
   let entries: SongListEntry[];
-  if (qTrim && numTrim) {
-    entries = searchSongEntries(filtered, qTrim, options.categories);
-  } else if (numTrim && !qTrim) {
-    entries = expandSongsToEntries(filtered);
-  } else if (qTrim) {
-    entries = searchSongEntries(filtered, qTrim, options.categories);
+  if (qTrim) {
+    entries = searchSongEntries(filtered, qTrim, options.categories, options.indexMap);
   } else {
     entries = expandSongsToEntries(filtered);
   }

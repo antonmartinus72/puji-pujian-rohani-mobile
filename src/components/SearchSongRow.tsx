@@ -11,7 +11,7 @@ export interface SearchSongRowProps {
   onPress: () => void;
 }
 
-export default function SearchSongRow({
+function SearchSongRowInner({
   entry,
   textQuery,
   active,
@@ -84,3 +84,9 @@ export default function SearchSongRow({
     </Pressable>
   );
 }
+
+export default React.memo(SearchSongRowInner, (prev, next) =>
+  prev.entry.listKey === next.entry.listKey &&
+  prev.textQuery === next.textQuery &&
+  prev.active === next.active
+);
