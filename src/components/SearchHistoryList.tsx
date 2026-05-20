@@ -21,7 +21,7 @@ export default function SearchHistoryList({
           Belum ada riwayat.
         </Text>
       ) : (
-        entries.map((entry) => (
+        entries.slice(0, 5).map((entry) => (
           <Pressable
             key={entry}
             onPress={() => onSelect(entry)}

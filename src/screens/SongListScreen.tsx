@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Pressable, Text, TextInput, View } from 'react-native';
 import { useFocusEffect, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -34,7 +34,7 @@ export default function SongListScreen({
   navigation,
 }: RootStackScreenProps<'SongList'>) {
   const route = useRoute<SongListRoute>();
-  const { songs, goToId, currentSong } = useSongs();
+  const { songs, goToId, currentSong, searchIndex } = useSongs();
   const { addSongToSetlist } = useSetlist();
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
@@ -49,6 +49,7 @@ export default function SongListScreen({
   );
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
   const [metaExpanded, setMetaExpanded] = useState(false);
+  const [debouncedQ, setDebouncedQ] = useState('');
   const textInputRef = useRef<TextInput>(null);
   const numInputRef = useRef<TextInput>(null);
 
@@ -58,6 +59,11 @@ export default function SongListScreen({
     isPick && route.params?.setlistId ? route.params.setlistId : undefined;
 
   const screenTitle = isPick ? 'Pilih Lagu' : 'Daftar Lagu';
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQ(q), 250);
+    return () => clearTimeout(timer);
+  }, [q]);
 
   const allTags = useMemo(() => collectAllTags(songs), [songs]);
 
@@ -69,6 +75,7 @@ export default function SongListScreen({
   useFocusEffect(
     useCallback(() => {
       setQ('');
+      setDebouncedQ('');
       setNumQ('');
       setSortMode('id');
       setSelectedTags([]);
@@ -93,13 +100,14 @@ export default function SongListScreen({
   const results = useMemo(
     () =>
       buildListEntries(songs, {
-        textQuery: q.trim(),
+        textQuery: debouncedQ.trim(),
         numberPrefix: numQ.trim(),
         categories,
         selectedTags,
         sortMode,
+        indexMap: searchIndex,
       }),
-    [songs, q, numQ, categories, selectedTags, sortMode]
+    [songs, debouncedQ, numQ, categories, selectedTags, sortMode, searchIndex]
   );
 
   const showSearchRows = !!q.trim();
@@ -206,6 +214,10 @@ export default function SongListScreen({
         data={results}
         keyExtractor={(item) => item.listKey}
         keyboardShouldPersistTaps="handled"
+        initialNumToRender={15}
+        maxToRenderPerBatch={10}
+        windowSize={7}
+        removeClippedSubviews={true}
         renderItem={({ item }) =>
           showSearchRows ? (
             <SearchSongRow

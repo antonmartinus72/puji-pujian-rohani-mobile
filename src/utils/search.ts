@@ -5,6 +5,14 @@ function normalize(s: string | undefined | null): string {
   return (s || '').toLowerCase().trim();
 }
 
+export interface SongSearchIndex {
+  titleTextLower: string;
+  lyricsTextLower: string;
+  creditTextLower: string;
+}
+
+export type SongSearchIndexMap = Map<number, SongSearchIndex>;
+
 export interface SearchCategories {
   judul: boolean;
   lirik: boolean;
@@ -45,28 +53,51 @@ function songLyricsText(song: Song): string {
     .join(' ');
 }
 
+export function buildSearchIndex(songs: Song[]): SongSearchIndexMap {
+  const map = new Map<number, SongSearchIndex>();
+  for (const song of songs) {
+    map.set(song.id, {
+      titleTextLower: songTitleText(song).toLowerCase(),
+      lyricsTextLower: songLyricsText(song).toLowerCase(),
+      creditTextLower: songCreditText(song).toLowerCase(),
+    });
+  }
+  return map;
+}
+
 function matchesCategory(
   song: Song,
   q: string,
-  categories: SearchCategories
+  categories: SearchCategories,
+  idx?: SongSearchIndex
 ): boolean {
-  if (categories.judul && normalize(songTitleText(song)).includes(q)) return true;
-  if (categories.lirik && normalize(songLyricsText(song)).includes(q)) return true;
-  if (categories.sumberKarya && normalize(songCreditText(song)).includes(q)) return true;
+  if (categories.judul) {
+    const text = idx ? idx.titleTextLower : normalize(songTitleText(song));
+    if (text.includes(q)) return true;
+  }
+  if (categories.lirik) {
+    const text = idx ? idx.lyricsTextLower : normalize(songLyricsText(song));
+    if (text.includes(q)) return true;
+  }
+  if (categories.sumberKarya) {
+    const text = idx ? idx.creditTextLower : normalize(songCreditText(song));
+    if (text.includes(q)) return true;
+  }
   return false;
 }
 
 export function searchSongs(
   songs: Song[],
   query: string,
-  categories: SearchCategories = DEFAULT_SEARCH_CATEGORIES
+  categories: SearchCategories = DEFAULT_SEARCH_CATEGORIES,
+  indexMap?: SongSearchIndexMap
 ): Song[] {
   const q = normalize(query);
   if (!q) return songs;
 
   const cats = ensureAtLeastOneCategory(categories);
 
-  return songs.filter((song) => matchesCategory(song, q, cats));
+  return songs.filter((song) => matchesCategory(song, q, cats, indexMap?.get(song.id)));
 }
 
 export interface MatchPart {
