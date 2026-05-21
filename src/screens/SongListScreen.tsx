@@ -162,16 +162,25 @@ export default function SongListScreen({
       <Text className="px-4 pt-2 text-sm text-slate-500 dark:text-slate-400">
         {songs.length} lagu
       </Text>
-      <TextInput
-        ref={textInputRef}
-        value={q}
-        onChangeText={setQ}
-        onSubmitEditing={onSearchSubmit}
-        placeholder="Judul atau lirik…"
-        placeholderTextColor="#94a3b8"
-        className="mx-4 mt-2 rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-base text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
-        returnKeyType="search"
-      />
+      <View className="mx-4 mt-2 relative justify-center">
+        <TextInput
+          ref={textInputRef}
+          value={q}
+          onChangeText={setQ}
+          onSubmitEditing={onSearchSubmit}
+          placeholder="Judul atau lirik…"
+          placeholderTextColor="#94a3b8"
+          className="rounded-xl border border-slate-200 bg-white pl-3.5 pr-12 py-3 text-base text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+          returnKeyType="search"
+        />
+        <Pressable
+          onPress={onSearchSubmit}
+          className="absolute right-0 top-0 bottom-0 w-12 items-center justify-center rounded-r-xl"
+          accessibilityLabel="Cari lagu"
+        >
+          <Ionicons name="search" size={20} color={colors.iconBack} />
+        </Pressable>
+      </View>
       <Pressable
         onPress={() => setMetaExpanded((v) => !v)}
         className="mx-4 mb-1 mt-2 flex-row items-center gap-1"
@@ -197,17 +206,27 @@ export default function SongListScreen({
         </>
       ) : null}
       <View className="mx-4 mb-3 mt-2 flex-row items-stretch gap-2">
-        <TextInput
-          ref={numInputRef}
-          value={numQ}
-          onChangeText={(t) => setNumQ(t.replace(/[^0-9]/g, ''))}
-          placeholder="Nomor lagu…"
-          placeholderTextColor="#94a3b8"
-          className="min-h-[48px] flex-1 rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-base text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
-          keyboardType="number-pad"
-          returnKeyType="search"
-          maxLength={8}
-        />
+        <View className="relative flex-1 justify-center">
+          <TextInput
+            ref={numInputRef}
+            value={numQ}
+            onChangeText={(t) => setNumQ(t.replace(/[^0-9]/g, ''))}
+            onSubmitEditing={() => numInputRef.current?.blur()}
+            placeholder="Nomor lagu…"
+            placeholderTextColor="#94a3b8"
+            className="min-h-[48px] w-full rounded-xl border border-slate-200 bg-white pl-3.5 pr-12 py-3 text-base text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+            keyboardType="number-pad"
+            returnKeyType="search"
+            maxLength={8}
+          />
+          <Pressable
+            onPress={() => numInputRef.current?.blur()}
+            className="absolute right-0 top-0 bottom-0 w-12 items-center justify-center rounded-r-xl"
+            accessibilityLabel="Cari nomor lagu"
+          >
+            <Ionicons name="search" size={20} color={colors.iconBack} />
+          </Pressable>
+        </View>
         <SortByControl value={sortMode} onChange={setSortMode} />
       </View>
       <FlatList
