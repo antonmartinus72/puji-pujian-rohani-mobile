@@ -6,6 +6,13 @@ import {
   type SearchCategories,
   type SongSearchIndexMap,
 } from './search';
+import {
+  filterByIdPrefixIndexed,
+  filterSongsByTagsIndexed,
+  queryIndex,
+  MIN_QUERY_LENGTH,
+  type PersistedSearchIndex,
+} from './searchIndexBuilder';
 
 export interface SongListEntry {
   listKey: string;
@@ -198,6 +205,77 @@ export function searchSongEntries(
   return out;
 }
 
+/**
+ * Fast indexed search using the persisted inverted + trigram index.
+ * Results are ordered by relevance score (title match > credit > lyrics).
+ * Falls back to the full linear search if the query is too short.
+ */
+export function searchSongEntriesIndexed(
+  songs: Song[],
+  query: string,
+  categories: SearchCategories = DEFAULT_SEARCH_CATEGORIES,
+  persistedIndex: PersistedSearchIndex,
+): SongListEntry[] {
+  const q = normalizeQuery(query);
+  if (!q) return expandSongsToEntries(songs);
+
+  // If query is below min length, delegate to the linear fallback
+  if (q.length < MIN_QUERY_LENGTH) {
+    return searchSongEntries(songs, query, categories);
+  }
+
+  const scored = queryIndex(persistedIndex, q, categories);
+  if (scored.length === 0) return [];
+
+  // Build a fast lookup: songId → Song
+  const songById = new Map<number, Song>(songs.map((s) => [s.id, s]));
+
+  const out: SongListEntry[] = [];
+  const seen = new Set<string>();
+
+  for (const { songId, bestField } of scored) {
+    const song = songById.get(songId);
+    if (!song) continue;
+
+    // If title was the best match, show only the matching title slots
+    if (bestField === 'title') {
+      const matching = getNonEmptyTitleSlots(song).filter((s) =>
+        titleSlotMatches(s.text, q)
+      );
+      const slots = matching.length > 0 ? matching : getNonEmptyTitleSlots(song).slice(0, 1);
+      for (const { text, index } of slots) {
+        const key = `${song.id}-${index}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push({
+          listKey: key,
+          song,
+          displayTitle: text,
+          titleIndex: index,
+          sortKey: text.toLowerCase(),
+        });
+      }
+    } else {
+      // For credit/lyrics matches show the primary title slot
+      const primary = getPrimaryTitle(song);
+      const primarySlot = getNonEmptyTitleSlots(song)[0];
+      const key = `${song.id}-${primarySlot?.index ?? 0}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        out.push({
+          listKey: key,
+          song,
+          displayTitle: primary,
+          titleIndex: primarySlot?.index ?? 0,
+          sortKey: primary.toLowerCase(),
+        });
+      }
+    }
+  }
+
+  return out;
+}
+
 export function buildListEntries(
   songs: Song[],
   options: {
@@ -207,19 +285,31 @@ export function buildListEntries(
     selectedTags?: string[];
     sortMode?: SortMode;
     indexMap?: SongSearchIndexMap;
+    persistedIndex?: PersistedSearchIndex | null;
   }
 ): SongListEntry[] {
   const numTrim = (options.numberPrefix ?? '').trim();
   const qTrim = (options.textQuery ?? '').trim();
+  const pi = options.persistedIndex ?? null;
 
-  let filtered = filterSongsByTags(songs, options.selectedTags ?? []);
+  // Tag filtering: use tag index when available (O(1) per tag)
+  let filtered = pi
+    ? filterSongsByTagsIndexed(songs, options.selectedTags ?? [], pi.tagIndex)
+    : filterSongsByTags(songs, options.selectedTags ?? []);
+
+  // Number prefix filtering: use ID prefix index when available
   if (numTrim) {
-    filtered = filtered.filter((s) => String(s.id).startsWith(numTrim));
+    filtered = pi
+      ? filterByIdPrefixIndexed(filtered, numTrim, pi.idPrefixIndex)
+      : filtered.filter((s: Song) => String(s.id).startsWith(numTrim));
   }
 
   let entries: SongListEntry[];
   if (qTrim) {
-    entries = searchSongEntries(filtered, qTrim, options.categories, options.indexMap);
+    entries =
+      pi && qTrim.length >= MIN_QUERY_LENGTH
+        ? searchSongEntriesIndexed(filtered, qTrim, options.categories, pi)
+        : searchSongEntries(filtered, qTrim, options.categories, options.indexMap);
   } else {
     entries = expandSongsToEntries(filtered);
   }

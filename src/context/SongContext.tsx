@@ -24,11 +24,17 @@ import {
   getProfile,
 } from '../services/databaseRegistry';
 import type { GithubRepoConfig } from '../utils/githubUrls';
-import { dbSongsKey, getDynamicItem } from '../services/storage';
+import { dbSearchIndexKey, dbSongsKey, getDynamicItem, setDynamicItem } from '../services/storage';
 import { checkForUpdate, downloadUpdate } from '../services/updater';
 import type { RemoteVersionPayload } from '../services/updater';
 import { normalizeSongsPayload } from '../utils/normalizeSong';
 import { buildSearchIndex, type SongSearchIndexMap } from '../utils/search';
+import {
+  SEARCH_INDEX_VERSION,
+  buildPersistedIndex,
+  deriveSearchIndexMap,
+  type PersistedSearchIndex,
+} from '../utils/searchIndexBuilder';
 import {
   formatValidationErrors,
   validateSongsPayload,
@@ -68,6 +74,7 @@ export interface StartupUpdateOffer {
 export interface SongContextValue {
   songs: Song[];
   searchIndex: SongSearchIndexMap;
+  persistedIndex: PersistedSearchIndex | null;
   meta: { version: string; updatedAt: string };
   ready: boolean;
   currentSong: Song | null;
@@ -120,6 +127,7 @@ export function SongProvider({ children }: { children: ReactNode }) {
   const [profileLoadErrors, setProfileLoadErrors] = useState<
     Record<DatabaseId, string | null>
   >({});
+  const [persistedIndex, setPersistedIndex] = useState<PersistedSearchIndex | null>(null);
   const startupToastShown = useRef(false);
 
   const activeProfile = useMemo(() => {
@@ -352,7 +360,49 @@ export function SongProvider({ children }: { children: ReactNode }) {
 
   const currentSong = songs[currentIndex] ?? null;
 
-  const searchIndex = useMemo(() => buildSearchIndex(songs), [songs]);
+  // Load persisted index from storage. If not found or schema mismatch,
+  // build a new one in the background and persist it.
+  useEffect(() => {
+    if (!songs.length) return;
+    let cancelled = false;
+    void (async () => {
+      const raw = await getDynamicItem(dbSearchIndexKey(activeProfile.id));
+      if (raw && !cancelled) {
+        try {
+          const parsed = JSON.parse(raw) as PersistedSearchIndex;
+          if (parsed.version === SEARCH_INDEX_VERSION) {
+            setPersistedIndex(parsed);
+            return;
+          }
+        } catch {
+          /* fallthrough to rebuild */
+        }
+      }
+      if (cancelled) return;
+      // Fallback: build index in background and persist it
+      const built = buildPersistedIndex(songs);
+      if (!cancelled) {
+        setPersistedIndex(built);
+        void setDynamicItem(
+          dbSearchIndexKey(activeProfile.id),
+          JSON.stringify(built)
+        );
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [songs, activeProfile.id]);
+
+  // Derive the backward-compatible SongSearchIndexMap from persisted index,
+  // or build it fresh if the persisted index is not yet available.
+  const searchIndex = useMemo(
+    () =>
+      persistedIndex
+        ? deriveSearchIndexMap(persistedIndex)
+        : buildSearchIndex(songs),
+    [persistedIndex, songs]
+  );
 
   const songIdToIndex = useMemo(() => {
     const map = new Map<number, number>();
@@ -409,6 +459,7 @@ export function SongProvider({ children }: { children: ReactNode }) {
     () => ({
       songs,
       searchIndex,
+      persistedIndex,
       meta,
       ready,
       currentSong,
@@ -441,6 +492,7 @@ export function SongProvider({ children }: { children: ReactNode }) {
     [
       songs,
       searchIndex,
+      persistedIndex,
       meta,
       ready,
       currentSong,

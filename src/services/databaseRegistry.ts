@@ -16,6 +16,7 @@ import {
   removeItem,
   setDynamicItem,
   setItem,
+  dbSearchIndexKey,
 } from './storage';
 
 export type DatabaseId = 'default' | string;
@@ -189,6 +190,7 @@ export async function removeCustomProfile(id: DatabaseId): Promise<DatabaseRegis
     removeDynamicItem(dbSongsKey(id)),
     removeDynamicItem(dbVersionKey(id)),
     removeDynamicItem(dbSetlistsKey(id)),
+    removeDynamicItem(dbSearchIndexKey(id)),
   ]);
   return state;
 }
@@ -209,5 +211,6 @@ export async function clearProfileCache(id: DatabaseId): Promise<void> {
   await Promise.all([
     removeDynamicItem(dbSongsKey(id)),
     removeDynamicItem(dbVersionKey(id)),
+    removeDynamicItem(dbSearchIndexKey(id)),
   ]);
 }
