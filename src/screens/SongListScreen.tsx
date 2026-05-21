@@ -24,6 +24,7 @@ import {
   collectAllTags,
   type SortMode,
 } from '../utils/songListEntries';
+import { MIN_QUERY_LENGTH } from '../utils/searchIndexBuilder';
 import type { RouteProp } from '@react-navigation/native';
 import type { RootStackParamList, RootStackScreenProps } from '../navigation/types';
 import { useThemeColors } from '../hooks/useThemeColors';
@@ -34,7 +35,7 @@ export default function SongListScreen({
   navigation,
 }: RootStackScreenProps<'SongList'>) {
   const route = useRoute<SongListRoute>();
-  const { songs, goToId, currentSong, searchIndex } = useSongs();
+  const { songs, goToId, currentSong, searchIndex, persistedIndex } = useSongs();
   const { addSongToSetlist } = useSetlist();
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
@@ -49,9 +50,14 @@ export default function SongListScreen({
   );
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
   const [metaExpanded, setMetaExpanded] = useState(false);
+  const [showAllResults, setShowAllResults] = useState(false);
   const [debouncedQ, setDebouncedQ] = useState('');
   const textInputRef = useRef<TextInput>(null);
   const numInputRef = useRef<TextInput>(null);
+
+  useEffect(() => {
+    setShowAllResults(false);
+  }, [q, numQ, selectedTags, categories, sortMode]);
 
   const variant = route.params?.variant ?? 'list';
   const isPick = variant === 'pick';
@@ -106,11 +112,14 @@ export default function SongListScreen({
         selectedTags,
         sortMode,
         indexMap: searchIndex,
+        persistedIndex,
       }),
-    [songs, debouncedQ, numQ, categories, selectedTags, sortMode, searchIndex]
+    [songs, debouncedQ, numQ, categories, selectedTags, sortMode, searchIndex, persistedIndex]
   );
 
-  const showSearchRows = !!q.trim();
+  const showSearchRows = q.trim().length >= MIN_QUERY_LENGTH;
+  const isSearching = !!q.trim() || !!numQ.trim() || selectedTags.length > 0 || categories !== DEFAULT_SEARCH_CATEGORIES;
+  const displayedResults = (isSearching && !showAllResults) ? results.slice(0, 5) : results;
 
   const persistSearchQuery = useCallback(
     async (query: string) => {
@@ -160,7 +169,7 @@ export default function SongListScreen({
         }
       />
       <Text className="px-4 pt-2 text-sm text-slate-500 dark:text-slate-400">
-        {songs.length} lagu
+        {isSearching ? `${results.length} ditemukan` : `${songs.length} lagu`}
       </Text>
       <View className="mx-4 mt-2 relative justify-center">
         <TextInput
@@ -230,7 +239,7 @@ export default function SongListScreen({
         <SortByControl value={sortMode} onChange={setSortMode} />
       </View>
       <FlatList
-        data={results}
+        data={displayedResults}
         keyExtractor={(item) => item.listKey}
         keyboardShouldPersistTaps="handled"
         initialNumToRender={15}
@@ -262,6 +271,18 @@ export default function SongListScreen({
               ? 'Tidak ada hasil.'
               : 'Belum ada lagu.'}
           </Text>
+        }
+        ListFooterComponent={
+          isSearching && !showAllResults && results.length > 5 ? (
+            <Pressable
+              onPress={() => setShowAllResults(true)}
+              className="mx-4 my-4 items-center justify-center rounded-xl bg-blue-100 py-3 active:bg-blue-200 dark:bg-blue-900/40 dark:active:bg-blue-900/60"
+            >
+              <Text className="text-sm font-semibold text-blue-700 dark:text-blue-300">
+                Tampilkan hasil lainnya ({results.length - 5} lagu)
+              </Text>
+            </Pressable>
+          ) : null
         }
         contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}
       />

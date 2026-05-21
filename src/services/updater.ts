@@ -7,10 +7,12 @@ import {
 import {
   dbSongsKey,
   dbVersionKey,
+  dbSearchIndexKey,
   getDynamicItem,
   setDynamicItem,
 } from './storage';
 import type { SongsPayload } from '../types/songs';
+import { buildPersistedIndex } from '../utils/searchIndexBuilder';
 
 export interface RemoteVersionPayload {
   version: string;
@@ -68,6 +70,13 @@ export async function downloadUpdate(
 
   await setDynamicItem(dbSongsKey(profile.id), JSON.stringify(validation.data));
   await setDynamicItem(dbVersionKey(profile.id), JSON.stringify(remoteVersion));
+
+  // Build and persist search index during import
+  const searchIndex = buildPersistedIndex(validation.data.songs);
+  await setDynamicItem(
+    dbSearchIndexKey(profile.id),
+    JSON.stringify(searchIndex)
+  );
 
   return validation.data;
 }

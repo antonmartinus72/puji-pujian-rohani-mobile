@@ -32,21 +32,21 @@ export function ensureAtLeastOneCategory(categories: SearchCategories): SearchCa
   return { ...categories, judul: true };
 }
 
-function songTitleText(song: Song): string {
+export function songTitleText(song: Song): string {
   return (song.title || [])
     .map((t) => (t || '').trim())
     .filter(Boolean)
     .join(' ');
 }
 
-function songCreditText(song: Song): string {
+export function songCreditText(song: Song): string {
   return (song.credit || [])
     .map((c) => (c || '').trim())
     .filter(Boolean)
     .join(' ');
 }
 
-function songLyricsText(song: Song): string {
+export function songLyricsText(song: Song): string {
   if (!song.lyrics || !Array.isArray(song.lyrics)) return '';
   return song.lyrics
     .map((block) => [block.label, ...(block.lines || [])].join(' '))
@@ -64,6 +64,7 @@ export function buildSearchIndex(songs: Song[]): SongSearchIndexMap {
   }
   return map;
 }
+
 
 function matchesCategory(
   song: Song,

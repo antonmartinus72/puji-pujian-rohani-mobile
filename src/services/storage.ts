@@ -24,6 +24,10 @@ export function dbSetlistsKey(profileId: string): string {
   return `db_setlists_${profileId}`;
 }
 
+export function dbSearchIndexKey(profileId: string): string {
+  return `db_search_index_${profileId}`;
+}
+
 export async function getItem(key: StorageKey): Promise<string | null> {
   try {
     return await AsyncStorage.getItem(key);
