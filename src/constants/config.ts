@@ -3,7 +3,7 @@
  * Biarkan placeholder jika belum ada repo — aplikasi tetap pakai songs.json lokal.
  */
 export const GITHUB_USERNAME = 'antonmartinus72';
-export const GITHUB_REPO = 'puji-pujian-rohani-mobile';
+export const GITHUB_REPO = 'puji-pujian-rohani-db';
 export const BRANCH = 'main';
 
 export const VERSION_URL = `https://raw.githubusercontent.com/${GITHUB_USERNAME}/${GITHUB_REPO}/${BRANCH}/version.json`;

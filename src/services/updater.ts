@@ -57,7 +57,8 @@ export async function checkForUpdate(
 
 export async function downloadUpdate(
   profile: DatabaseProfile,
-  remoteVersion: RemoteVersionPayload
+  remoteVersion: RemoteVersionPayload,
+  onIndexingStart?: () => Promise<void>
 ): Promise<SongsPayload> {
   const { songsUrl } = buildGithubUrls(profile.github);
   const response = await fetch(songsUrl);
@@ -72,6 +73,9 @@ export async function downloadUpdate(
   await setDynamicItem(dbVersionKey(profile.id), JSON.stringify(remoteVersion));
 
   // Build and persist search index during import
+  if (onIndexingStart) {
+    await onIndexingStart();
+  }
   const searchIndex = buildPersistedIndex(validation.data.songs);
   await setDynamicItem(
     dbSearchIndexKey(profile.id),

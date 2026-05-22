@@ -16,8 +16,9 @@ import { formatRepoSummary } from '../utils/githubUrls';
 
 export default function DatabaseUpdateModal() {
   const { target, loading, closeUpdateModal, setLoading } = useUpdateModal();
-  const { activeProfile, applyPayload, checkActiveUpdate, dismissUpdateBanner } =
+  const { activeProfile, applyPayload, checkActiveUpdate, dismissUpdateBanner, updateStats } =
     useSongs();
+  const [isIndexing, setIsIndexing] = React.useState(false);
   const { isDark } = useTheme();
   const colors = useThemeColors();
 
@@ -34,10 +35,25 @@ export default function DatabaseUpdateModal() {
 
   async function onConfirm() {
     setLoading(true);
+    setIsIndexing(false);
     try {
-      const data = await downloadUpdate(profile, remoteVersion);
+      const data = await downloadUpdate(profile, remoteVersion, async () => {
+        setIsIndexing(true);
+        // Memberi waktu agar UI React memproses render "Membangun index..."
+        await new Promise((r) => setTimeout(r, 50));
+      });
+      
+      await updateStats(profile.id, {
+        version: remoteVersion.version,
+        updatedAt: data.updatedAt,
+        songCount: data.totalSongs || data.songs.length,
+      });
+
       if (activeProfile.id === profile.id) {
-        applyPayload(data);
+        applyPayload(data, {
+          version: remoteVersion.version,
+          updatedAt: data.updatedAt,
+        });
       }
       dismissUpdateBanner();
       closeUpdateModal();
@@ -51,6 +67,7 @@ export default function DatabaseUpdateModal() {
       );
     } finally {
       setLoading(false);
+      setIsIndexing(false);
     }
   }
 
@@ -109,7 +126,11 @@ export default function DatabaseUpdateModal() {
                 className="min-w-[120px] items-center justify-center rounded-lg bg-nav px-4 py-2.5"
               >
                 {loading ? (
-                  <ActivityIndicator color="#fff" />
+                  isIndexing ? (
+                    <Text className="font-bold text-white text-sm">Membangun index...</Text>
+                  ) : (
+                    <ActivityIndicator color="#fff" />
+                  )
                 ) : (
                   <Text className="font-bold text-white">Unduh sekarang</Text>
                 )}
