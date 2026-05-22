@@ -22,6 +22,7 @@ import {
   addCustomProfile,
   removeCustomProfile,
   getProfile,
+  updateProfileStats,
 } from '../services/databaseRegistry';
 import type { GithubRepoConfig } from '../utils/githubUrls';
 import { dbSearchIndexKey, dbSongsKey, getDynamicItem, setDynamicItem } from '../services/storage';
@@ -84,7 +85,7 @@ export interface SongContextValue {
   goPrev: () => void;
   goToId: (id: number, titleIndex?: number) => void;
   goToIndex: (index: number) => void;
-  applyPayload: (data: SongsPayload) => void;
+  applyPayload: (data: SongsPayload, remoteStats?: { version: string; updatedAt?: string }) => void;
   activeProfile: DatabaseProfile;
   profiles: DatabaseProfile[];
   registryReady: boolean;
@@ -92,7 +93,16 @@ export interface SongContextValue {
   switchDatabase: (id: DatabaseId) => Promise<void>;
   refreshRegistry: () => Promise<DatabaseRegistryState>;
   updateDefaultRepo: (github: GithubRepoConfig) => Promise<void>;
-  addDatabase: (name: string, github: GithubRepoConfig) => Promise<DatabaseProfile>;
+  addDatabase: (
+    name: string,
+    github: GithubRepoConfig,
+    idStr?: string,
+    stats?: { version: string; updatedAt?: string; songCount: number }
+  ) => Promise<DatabaseProfile>;
+  updateStats: (
+    id: DatabaseId,
+    stats: { version: string; updatedAt?: string; songCount: number }
+  ) => Promise<void>;
   removeDatabase: (id: DatabaseId) => Promise<void>;
   resetDefaultToBundled: () => Promise<void>;
   checkActiveUpdate: () => Promise<void>;
@@ -137,7 +147,7 @@ export function SongProvider({ children }: { children: ReactNode }) {
 
   const profiles = registry?.profiles ?? [];
 
-  const applyPayload = useCallback((data: SongsPayload) => {
+  const applyPayload = useCallback((data: SongsPayload, remoteStats?: { version: string; updatedAt?: string }) => {
     const result = validateSongsPayload(data);
     if (!result.ok) {
       throw new Error(formatValidationErrors(result.errors));
@@ -146,8 +156,8 @@ export function SongProvider({ children }: { children: ReactNode }) {
     const list = sortSongsById(normalized.songs);
     setSongs(list);
     setMeta({
-      version: normalized.version ?? '1.0.0',
-      updatedAt: normalized.updatedAt ?? '',
+      version: remoteStats?.version ?? normalized.version ?? '1.0.0',
+      updatedAt: remoteStats?.updatedAt ?? normalized.updatedAt ?? '',
     });
     setCurrentIndex(0);
     setReaderTitleIndex(0);
@@ -178,8 +188,8 @@ export function SongProvider({ children }: { children: ReactNode }) {
             const list = sortSongsById(normalized.songs);
             setSongs(list);
             setMeta({
-              version: normalized.version ?? '1.0.0',
-              updatedAt: normalized.updatedAt ?? '',
+              version: profile.stats?.version ?? normalized.version ?? '1.0.0',
+              updatedAt: profile.stats?.updatedAt ?? normalized.updatedAt ?? '',
             });
             setCurrentIndex(0);
             return true;
@@ -195,8 +205,8 @@ export function SongProvider({ children }: { children: ReactNode }) {
           const list = sortSongsById(normalized.songs);
           setSongs(list);
           setMeta({
-            version: normalized.version ?? '1.0.0',
-            updatedAt: normalized.updatedAt ?? '',
+            version: profile.stats?.version ?? normalized.version ?? '1.0.0',
+            updatedAt: profile.stats?.updatedAt ?? normalized.updatedAt ?? '',
           });
           setCurrentIndex(0);
           return true;
@@ -268,7 +278,10 @@ export function SongProvider({ children }: { children: ReactNode }) {
       const profile = getProfile(registry, registry.activeId);
       if (!profile) return;
       const data = await downloadUpdate(profile, remoteVersion);
-      applyPayload(data);
+      applyPayload(data, {
+        version: remoteVersion.version,
+        updatedAt: data.updatedAt,
+      });
       setPendingUpdate(null);
       clearStartupUpdateOffer();
     },
@@ -298,11 +311,30 @@ export function SongProvider({ children }: { children: ReactNode }) {
     []
   );
 
-  const addDatabase = useCallback(async (name: string, github: GithubRepoConfig) => {
-    const { state, profile } = await addCustomProfile(name, github);
-    setRegistry(state);
-    return profile;
-  }, []);
+  const addDatabase = useCallback(
+    async (
+      name: string,
+      github: GithubRepoConfig,
+      idStr?: string,
+      stats?: { version: string; updatedAt?: string; songCount: number }
+    ) => {
+      const { state, profile } = await addCustomProfile(name, github, idStr, stats);
+      setRegistry(state);
+      return profile;
+    },
+    []
+  );
+
+  const updateStats = useCallback(
+    async (
+      id: DatabaseId,
+      stats: { version: string; updatedAt?: string; songCount: number }
+    ) => {
+      const state = await updateProfileStats(id, stats);
+      setRegistry(state);
+    },
+    []
+  );
 
   const removeDatabase = useCallback(
     async (id: DatabaseId) => {
@@ -478,6 +510,7 @@ export function SongProvider({ children }: { children: ReactNode }) {
       refreshRegistry,
       updateDefaultRepo,
       addDatabase,
+      updateStats,
       removeDatabase,
       resetDefaultToBundled,
       checkActiveUpdate,
@@ -511,6 +544,7 @@ export function SongProvider({ children }: { children: ReactNode }) {
       refreshRegistry,
       updateDefaultRepo,
       addDatabase,
+      updateStats,
       removeDatabase,
       resetDefaultToBundled,
       checkActiveUpdate,

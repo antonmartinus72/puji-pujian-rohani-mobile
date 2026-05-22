@@ -28,6 +28,11 @@ export interface DatabaseProfile {
   name: string;
   kind: DatabaseKind;
   github: GithubRepoConfig;
+  stats?: {
+    version: string;
+    updatedAt?: string;
+    songCount: number;
+  };
 }
 
 export interface DatabaseRegistryState {
@@ -35,7 +40,7 @@ export interface DatabaseRegistryState {
   profiles: DatabaseProfile[];
 }
 
-function newCustomId(): string {
+export function newCustomId(): string {
   return `db_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 9)}`;
 }
 
@@ -160,13 +165,27 @@ export async function updateDefaultGithub(
   return updateProfileGithub('default', github);
 }
 
+export async function updateProfileStats(
+  id: DatabaseId,
+  stats: { version: string; updatedAt?: string; songCount: number }
+): Promise<DatabaseRegistryState> {
+  const state = await loadRegistry();
+  const profile = getProfile(state, id);
+  if (!profile) return state;
+  profile.stats = stats;
+  await saveRegistry(state);
+  return state;
+}
+
 export async function addCustomProfile(
   name: string,
-  github: GithubRepoConfig
+  github: GithubRepoConfig,
+  idStr?: string,
+  stats?: { version: string; updatedAt?: string; songCount: number }
 ): Promise<{ state: DatabaseRegistryState; profile: DatabaseProfile }> {
   const state = await loadRegistry();
   const profile: DatabaseProfile = {
-    id: newCustomId(),
+    id: idStr || newCustomId(),
     name: name.trim(),
     kind: 'custom',
     github: {
@@ -174,6 +193,7 @@ export async function addCustomProfile(
       repo: github.repo.trim(),
       branch: github.branch.trim() || 'main',
     },
+    stats,
   };
   state.profiles.push(profile);
   await saveRegistry(state);

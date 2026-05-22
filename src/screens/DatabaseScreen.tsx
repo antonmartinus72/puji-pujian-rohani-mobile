@@ -20,7 +20,8 @@ import { useThemeColors } from '../hooks/useThemeColors';
 import { useSongs } from '../context/SongContext';
 import { useUpdateModal } from '../context/UpdateModalContext';
 import type { DatabaseProfile } from '../services/databaseRegistry';
-import { checkForUpdate, fetchRemoteVersion, probeGithubRepo } from '../services/updater';
+import { newCustomId } from '../services/databaseRegistry';
+import { checkForUpdate, downloadUpdate, fetchRemoteVersion, probeGithubRepo } from '../services/updater';
 import { showError, showInfo, showSuccess } from '../services/toast';
 import type { RootStackScreenProps } from '../navigation/types';
 import { formatRepoSummary } from '../utils/githubUrls';
@@ -49,6 +50,7 @@ export default function DatabaseScreen({
   const colors = useThemeColors();
 
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [indexingId, setIndexingId] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<{
     title: string;
     message: string;
@@ -154,25 +156,44 @@ export default function DatabaseScreen({
     setBusyId('new');
     try {
       const github = { username, repo, branch };
+      const tempId = newCustomId();
       const tempProfile: DatabaseProfile = {
-        id: 'probe',
+        id: tempId,
         name,
         kind: 'custom',
         github,
       };
-      await probeGithubRepo(tempProfile);
-      await addDatabase(name, github);
+      
+      const remoteVersion = await fetchRemoteVersion(tempProfile);
+      
+      const data = await downloadUpdate(tempProfile, remoteVersion, async () => {
+        setIndexingId('new');
+        // Memberi waktu agar UI React memproses render tulisan "Membangun index..."
+        await new Promise((r) => setTimeout(r, 50));
+      });
+
+      const stats = {
+        version: remoteVersion.version,
+        updatedAt: data.updatedAt,
+        songCount: data.totalSongs || data.songs.length,
+      };
+
+      await addDatabase(name, github, tempId, stats);
+      
+      // Force refresh registry to reflect new database immediately
       await refreshRegistry();
+      
       setAddOpen(false);
       setNewName('');
       setNewUser('');
       setNewRepo('');
       setNewBranch('main');
-      showSuccess(`Database "${name}" ditambahkan.`);
+      showSuccess(`Database "${name}" berhasil ditambahkan.`);
     } catch (e) {
       showError(e instanceof Error ? e.message : 'Gagal menambahkan database.');
     } finally {
       setBusyId(null);
+      setIndexingId(null);
     }
   }
 
@@ -274,11 +295,19 @@ export default function DatabaseScreen({
             isActive={activeProfile.id === profile.id}
             busy={busyId === profile.id}
             songCount={
-              activeProfile.id === profile.id ? songs.length : undefined
+              activeProfile.id === profile.id
+                ? songs.length
+                : profile.stats?.songCount
             }
-            version={activeProfile.id === profile.id ? meta.version : undefined}
+            version={
+              activeProfile.id === profile.id
+                ? meta.version
+                : profile.stats?.version
+            }
             updatedAt={
-              activeProfile.id === profile.id ? meta.updatedAt : undefined
+              activeProfile.id === profile.id
+                ? meta.updatedAt
+                : profile.stats?.updatedAt
             }
             onCheck={() => void handleCheck(profile)}
             onDownload={() => void handleDownload(profile)}
@@ -388,9 +417,15 @@ export default function DatabaseScreen({
               <Pressable
                 onPress={() => void submitAdd()}
                 disabled={busyId === 'new'}
-                className="flex-1 items-center rounded-lg bg-nav py-2.5"
+                className="flex-1 items-center justify-center rounded-lg bg-nav py-2.5"
               >
-                <Text className="font-bold text-white">Simpan</Text>
+                {busyId === 'new' ? (
+                  <Text className="font-bold text-white">
+                    {indexingId === 'new' ? 'Membangun index...' : 'Mengunduh...'}
+                  </Text>
+                ) : (
+                  <Text className="font-bold text-white">Simpan</Text>
+                )}
               </Pressable>
             </View>
           </Pressable>
