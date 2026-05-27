@@ -8,8 +8,9 @@ import React, {
   useState,
   type ReactNode,
 } from 'react';
-import { AppState } from 'react-native';
+import { AppState, InteractionManager } from 'react-native';
 import bundledSongs from '../../assets/songs.json';
+import bundledSearchIndex from '../../assets/searchIndex.json';
 import {
   type DatabaseId,
   type DatabaseProfile,
@@ -411,15 +412,27 @@ export function SongProvider({ children }: { children: ReactNode }) {
         }
       }
       if (cancelled) return;
-      // Fallback: build index in background and persist it
-      const built = buildPersistedIndex(songs);
-      if (!cancelled) {
-        setPersistedIndex(built);
-        void setDynamicItem(
-          dbSearchIndexKey(activeProfile.id),
-          JSON.stringify(built)
-        );
+      
+      if (activeProfile.id === 'default') {
+        setPersistedIndex(bundledSearchIndex as PersistedSearchIndex);
+        return;
       }
+
+      // Fallback: build index in background and persist it
+      // Delay indexing so it doesn't block the UI thread during startup
+      InteractionManager.runAfterInteractions(() => {
+        setTimeout(() => {
+          if (cancelled) return;
+          const built = buildPersistedIndex(songs);
+          if (!cancelled) {
+            setPersistedIndex(built);
+            void setDynamicItem(
+              dbSearchIndexKey(activeProfile.id),
+              JSON.stringify(built)
+            );
+          }
+        }, 100);
+      });
     })();
     return () => {
       cancelled = true;
@@ -428,13 +441,13 @@ export function SongProvider({ children }: { children: ReactNode }) {
 
   // Derive the backward-compatible SongSearchIndexMap from persisted index,
   // or build it fresh if the persisted index is not yet available.
-  const searchIndex = useMemo(
-    () =>
-      persistedIndex
-        ? deriveSearchIndexMap(persistedIndex)
-        : buildSearchIndex(songs),
-    [persistedIndex, songs]
-  );
+  const searchIndex = useMemo(() => {
+    if (persistedIndex) return deriveSearchIndexMap(persistedIndex);
+    if (activeProfile.id === 'default') {
+      return deriveSearchIndexMap(bundledSearchIndex as unknown as PersistedSearchIndex);
+    }
+    return buildSearchIndex(songs);
+  }, [persistedIndex, songs, activeProfile.id]);
 
   const songIdToIndex = useMemo(() => {
     const map = new Map<number, number>();
