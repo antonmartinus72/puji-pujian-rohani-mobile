@@ -115,7 +115,7 @@ function validateSong(raw: unknown, index: number, errors: string[]): boolean {
     }
   }
 
-  if (raw.rootNote !== undefined) {
+  if (raw.rootNote !== undefined && raw.rootNote !== '') {
     if (typeof raw.rootNote !== 'string') {
       errors.push(`${path}.rootNote must be a string`);
       ok = false;
@@ -130,19 +130,22 @@ function validateSong(raw: unknown, index: number, errors: string[]): boolean {
     }
   }
 
-  if (raw.scaleType !== undefined) {
+  if (raw.scaleType !== undefined && raw.scaleType !== '') {
     if (raw.scaleType !== 'major' && raw.scaleType !== 'minor') {
       errors.push(`${path}.scaleType must be "major" or "minor"`);
       ok = false;
     }
   }
 
-  if (raw.scaleType !== undefined && raw.rootNote === undefined) {
+  const hasRootNote = raw.rootNote !== undefined && raw.rootNote !== '';
+  const hasScaleType = raw.scaleType !== undefined && raw.scaleType !== '';
+
+  if (hasScaleType && !hasRootNote) {
     errors.push(`${path}.rootNote is required when scaleType is set`);
     ok = false;
   }
 
-  if (raw.rootNote !== undefined && raw.scaleType === undefined) {
+  if (hasRootNote && !hasScaleType) {
     errors.push(`${path}.scaleType is required when rootNote is set`);
     ok = false;
   }
