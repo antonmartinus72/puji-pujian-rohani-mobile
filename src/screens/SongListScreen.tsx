@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, Pressable, Text, TextInput, View } from 'react-native';
+import { FlatList, Pressable, Text, TextInput, View, ScrollView } from 'react-native';
 import { useFocusEffect, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -204,7 +204,11 @@ export default function SongListScreen({
         </Text>
       </Pressable>
       {metaExpanded ? (
-        <>
+        <ScrollView
+          className="max-h-[680px] bg-slate-200 dark:bg-slate-900"
+          contentContainerStyle={{ paddingBottom: 8 }}
+          keyboardShouldPersistTaps="handled"
+        >
           <SearchHistoryList entries={filteredHistory} onSelect={onHistorySelect} />
           <SearchCategoryFilters categories={categories} onChange={setCategories} />
           <SearchTagFilters
@@ -212,7 +216,7 @@ export default function SongListScreen({
             selected={selectedTags}
             onChange={setSelectedTags}
           />
-        </>
+        </ScrollView>
       ) : null}
       <View className="mx-4 mb-3 mt-2 flex-row items-stretch gap-2">
         <View className="relative flex-1 justify-center">
