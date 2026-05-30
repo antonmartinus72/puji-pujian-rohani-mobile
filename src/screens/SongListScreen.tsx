@@ -97,6 +97,17 @@ export default function SongListScreen({
     }, [route.params?.focusNumber, route.params?.setlistId, refreshHistory])
   );
 
+  const resetFilters = useCallback(() => {
+    setQ('');
+    setDebouncedQ('');
+    setNumQ('');
+    setSortMode('id');
+    setSelectedTags([]);
+    setCategories(DEFAULT_SEARCH_CATEGORIES);
+    setMetaExpanded(false);
+    setShowAllResults(false);
+  }, []);
+
   const filteredHistory = useMemo(() => {
     const needle = q.trim().toLowerCase();
     if (!needle) return searchHistory;
@@ -241,6 +252,15 @@ export default function SongListScreen({
           </Pressable>
         </View>
         <SortByControl value={sortMode} onChange={setSortMode} />
+        {isSearching && (
+          <Pressable
+            onPress={resetFilters}
+            className="justify-center rounded-xl border border-red-200 bg-red-50 px-3 dark:border-red-900/50 dark:bg-red-900/20 active:bg-red-100 dark:active:bg-red-900/40"
+            accessibilityLabel="Reset filter"
+          >
+            <Text className="text-sm font-bold text-red-600 dark:text-red-400">Reset</Text>
+          </Pressable>
+        )}
       </View>
       <FlatList
         data={displayedResults}
