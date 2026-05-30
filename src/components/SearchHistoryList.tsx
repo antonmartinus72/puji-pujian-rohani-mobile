@@ -13,7 +13,7 @@ export default function SearchHistoryList({
 }: SearchHistoryListProps) {
   return (
     <View className="mx-4 mb-2">
-      <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+      <Text className="mb-1.5 mt-3 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
         Riwayat pencarian
       </Text>
       {entries.length === 0 ? (

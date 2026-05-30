@@ -25,17 +25,23 @@ function SearchSongRowInner({
   const isCreditSnippet = snippet.matchKind === 'credit';
   const otherHint = formatOtherTitlesHint(entry.song, entry.titleIndex);
 
+  const bgClass = active
+    ? 'bg-blue-100 dark:bg-blue-900'
+    : entry.altColorGroup
+      ? 'bg-blue-50/60 dark:bg-blue-950/40'
+      : '';
+
   return (
     <Pressable
       onPress={onPress}
-      className={`flex-row items-start border-b border-slate-200 px-3.5 py-3 dark:border-slate-700 ${active ? 'bg-blue-50 dark:bg-blue-950' : ''}`}
+      className={`flex-row items-start border-b border-slate-200 px-3.5 py-3 dark:border-slate-700 ${bgClass}`}
     >
       <Text className="w-11 pt-0.5 text-base font-semibold text-slate-500 dark:text-slate-400">
         {entry.song.id}.
       </Text>
       <View className="min-w-0 flex-1">
         <Text
-          className="text-[17px] font-semibold text-slate-900 dark:text-slate-100"
+          className="text-[17px] font-semibold text-slate-900 dark:text-slate-100 uppercase"
           numberOfLines={2}
         >
           {snippet.titleParts.map((p, i) => (
