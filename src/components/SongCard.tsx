@@ -12,16 +12,22 @@ export interface SongCardProps {
 function SongCardInner({ entry, onPress, highlight }: SongCardProps) {
   const otherHint = formatOtherTitlesHint(entry.song, entry.titleIndex);
 
+  const bgClass = highlight
+    ? 'bg-blue-100 dark:bg-blue-900'
+    : entry.altColorGroup
+      ? 'bg-blue-50/60 dark:bg-blue-950/40'
+      : '';
+
   return (
     <Pressable
       onPress={onPress}
-      className={`flex-row items-center border-b border-slate-200 px-3.5 py-3 dark:border-slate-700 ${highlight ? 'bg-blue-50 dark:bg-blue-950' : ''}`}
+      className={`flex-row items-center border-b border-slate-200 px-3.5 py-3 dark:border-slate-700 ${bgClass}`}
     >
       <Text className="w-11 text-base font-semibold text-slate-500 dark:text-slate-400">
         {entry.song.id}.
       </Text>
       <View className="min-w-0 flex-1">
-        <Text className="text-[17px] text-slate-900 dark:text-slate-100" numberOfLines={2}>
+        <Text className="text-[17px] text-slate-900 dark:text-slate-100 uppercase" numberOfLines={2}>
           {entry.displayTitle}
         </Text>
         {otherHint ? (

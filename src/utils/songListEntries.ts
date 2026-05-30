@@ -20,6 +20,7 @@ export interface SongListEntry {
   displayTitle: string;
   titleIndex: number;
   sortKey: string;
+  altColorGroup?: boolean;
 }
 
 export type SortMode = 'id' | 'title';
@@ -314,5 +315,18 @@ export function buildListEntries(
     entries = expandSongsToEntries(filtered);
   }
 
-  return sortListEntries(entries, options.sortMode ?? 'id');
+  const sortedEntries = sortListEntries(entries, options.sortMode ?? 'id');
+
+  let currentId: number | null = null;
+  let currentGroup = false;
+
+  for (const entry of sortedEntries) {
+    if (entry.song.id !== currentId) {
+      currentId = entry.song.id;
+      currentGroup = !currentGroup;
+    }
+    entry.altColorGroup = currentGroup;
+  }
+
+  return sortedEntries;
 }
