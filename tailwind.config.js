@@ -6,7 +6,7 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        nav: '#1e3a5f',
+        nav: '#0f766e',
         navBorder: '#0f172a',
       },
     },

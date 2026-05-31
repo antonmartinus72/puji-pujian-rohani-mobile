@@ -23,6 +23,7 @@ import {
   buildListEntries,
   collectAllTags,
   type SortMode,
+  type SongListEntry,
 } from '../utils/songListEntries';
 import { MIN_QUERY_LENGTH } from '../utils/searchIndexBuilder';
 import type { RouteProp } from '@react-navigation/native';
@@ -54,6 +55,7 @@ export default function SongListScreen({
   const [debouncedQ, setDebouncedQ] = useState('');
   const textInputRef = useRef<TextInput>(null);
   const numInputRef = useRef<TextInput>(null);
+  const flatListRef = useRef<FlatList<SongListEntry>>(null);
 
   useEffect(() => {
     setShowAllResults(false);
@@ -210,7 +212,7 @@ export default function SongListScreen({
           size={18}
           color={colors.iconBack}
         />
-        <Text className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+        <Text className="text-sm font-semibold text-teal-600 dark:text-teal-400">
           {metaExpanded ? 'Sembunyikan opsi pencarian' : 'Tampilkan opsi pencarian'}
         </Text>
       </Pressable>
@@ -251,7 +253,13 @@ export default function SongListScreen({
             <Ionicons name="search" size={20} color={colors.iconBack} />
           </Pressable>
         </View>
-        <SortByControl value={sortMode} onChange={setSortMode} />
+        <SortByControl 
+          value={sortMode} 
+          onChange={(newMode) => {
+            setSortMode(newMode);
+            flatListRef.current?.scrollToOffset({ offset: 0, animated: false });
+          }} 
+        />
         {isSearching && (
           <Pressable
             onPress={resetFilters}
@@ -263,6 +271,7 @@ export default function SongListScreen({
         )}
       </View>
       <FlatList
+        ref={flatListRef}
         data={displayedResults}
         keyExtractor={(item) => item.listKey}
         keyboardShouldPersistTaps="handled"
@@ -300,9 +309,9 @@ export default function SongListScreen({
           isSearching && !showAllResults && results.length > 5 ? (
             <Pressable
               onPress={() => setShowAllResults(true)}
-              className="mx-4 my-4 items-center justify-center rounded-xl bg-blue-100 py-3 active:bg-blue-200 dark:bg-blue-900/40 dark:active:bg-blue-900/60"
+              className="mx-4 my-4 items-center justify-center rounded-xl bg-teal-100 py-3 active:bg-teal-200 dark:bg-teal-900/40 dark:active:bg-teal-900/60"
             >
-              <Text className="text-sm font-semibold text-blue-700 dark:text-blue-300">
+              <Text className="text-sm font-semibold text-teal-700 dark:text-teal-300">
                 Tampilkan hasil lainnya ({results.length - 5} lagu)
               </Text>
             </Pressable>

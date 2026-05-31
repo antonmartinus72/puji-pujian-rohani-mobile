@@ -16,10 +16,22 @@ import DatabaseUpdateModal from './src/components/DatabaseUpdateModal';
 import StartupUpdateListener from './src/components/StartupUpdateListener';
 import AppNavigation from './src/navigation/AppNavigation';
 import { getThemeColors } from './src/constants/themeColors';
+import * as SplashScreen from 'expo-splash-screen';
+import CustomSplashScreen from './src/components/CustomSplashScreen';
+import { useState, useEffect } from 'react';
+
+// Keep the native splash screen visible until our custom splash screen has rendered
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 function AppRoot() {
   const { isDark } = useTheme();
   const colors = getThemeColors(isDark);
+  const [isSplashAnimationComplete, setSplashAnimationComplete] = useState(false);
+
+  useEffect(() => {
+    // Hide the native splash screen immediately so our custom splash screen is revealed
+    SplashScreen.hideAsync().catch(() => {});
+  }, []);
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
@@ -31,6 +43,9 @@ function AppRoot() {
               <StartupUpdateListener />
               <DatabaseUpdateModal />
               <Toast config={toastConfig} />
+              {!isSplashAnimationComplete && (
+                <CustomSplashScreen onAnimationComplete={() => setSplashAnimationComplete(true)} />
+              )}
             </SetlistProvider>
           </UpdateModalProvider>
         </SongProvider>

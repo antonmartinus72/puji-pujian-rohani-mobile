@@ -39,7 +39,7 @@ function MenuRow({
       onPress={onPress}
       className="flex-row items-center border-t border-slate-100 px-4 py-3.5 active:bg-slate-50 dark:border-slate-700 dark:active:bg-slate-800"
     >
-      <View className="mr-3 h-10 w-10 items-center justify-center rounded-[10px] bg-blue-50 dark:bg-slate-700">
+      <View className="mr-3 h-10 w-10 items-center justify-center rounded-[10px] bg-teal-50 dark:bg-slate-700">
         <Ionicons name={icon} size={22} color={iconMenu} />
       </View>
       <View className="min-w-0 flex-1">

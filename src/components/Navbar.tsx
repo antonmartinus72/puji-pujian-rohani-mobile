@@ -56,7 +56,7 @@ export default function Navbar({
       </Pressable>
       <Pressable
         onPress={onNumberPress}
-        className="min-w-[56px] rounded-lg bg-slate-600 px-3 py-2"
+        className="min-w-[56px] rounded-lg bg-teal-800 px-3 py-2"
         accessibilityLabel="Masukkan nomor lagu"
       >
         <Text className="text-center text-lg font-bold text-slate-100">

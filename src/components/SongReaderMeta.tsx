@@ -25,9 +25,9 @@ function TagChips({ tags }: { tags: string[] }) {
       {tags.map((tag) => (
         <View
           key={tag}
-          className="rounded-xl bg-blue-100 px-3 py-1.5 dark:bg-blue-900"
+          className="rounded-xl bg-teal-100 px-3 py-1.5 dark:bg-teal-900"
         >
-          <Text className="text-sm font-medium text-blue-800 dark:text-blue-200">
+          <Text className="text-sm font-medium text-teal-800 dark:text-teal-200">
             {tag}
           </Text>
         </View>
@@ -61,7 +61,7 @@ export default function SongReaderMeta({
           size={18}
           color={colors.iconBack}
         />
-        <Text className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+        <Text className="text-sm font-semibold text-teal-600 dark:text-teal-400">
           {expanded ? 'Sembunyikan informasi lagu' : 'Tampilkan informasi lagu'}
         </Text>
       </Pressable>

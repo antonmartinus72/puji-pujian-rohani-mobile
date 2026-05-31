@@ -13,9 +13,9 @@ function SongCardInner({ entry, onPress, highlight }: SongCardProps) {
   const otherHint = formatOtherTitlesHint(entry.song, entry.titleIndex);
 
   const bgClass = highlight
-    ? 'bg-blue-100 dark:bg-blue-900'
+    ? 'bg-teal-100 dark:bg-teal-900'
     : entry.altColorGroup
-      ? 'bg-blue-50/60 dark:bg-blue-950/40'
+      ? 'bg-teal-50/60 dark:bg-teal-950/40'
       : '';
 
   return (

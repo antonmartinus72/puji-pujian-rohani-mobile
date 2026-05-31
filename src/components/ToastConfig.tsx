@@ -61,10 +61,10 @@ export const toastConfig = {
   info: (props: BaseToastProps) => (
     <ToastCard
       props={props}
-      borderColor="#2563eb"
-      bgClass="border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950"
-      titleClass="text-blue-900 dark:text-blue-100"
-      subtitleClass="text-blue-800 dark:text-blue-200"
+      borderColor="#0d9488"
+      bgClass="border border-teal-200 bg-teal-50 dark:border-teal-800 dark:bg-teal-950"
+      titleClass="text-teal-900 dark:text-teal-100"
+      subtitleClass="text-teal-800 dark:text-teal-200"
     />
   ),
   update: (props: BaseToastProps) => (

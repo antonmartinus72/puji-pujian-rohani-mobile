@@ -33,19 +33,19 @@ export default function SearchCategoryFilters({
             onPress={() => toggle(key)}
             className={`flex-row items-center rounded-lg border px-2.5 py-1.5 ${
               on
-                ? 'border-blue-500 bg-blue-50 dark:border-blue-400 dark:bg-blue-950'
+                ? 'border-teal-500 bg-teal-50 dark:border-teal-400 dark:bg-teal-950'
                 : 'border-slate-200 bg-white dark:border-slate-600 dark:bg-slate-800'
             }`}
           >
             <Text
-              className={`mr-1.5 text-sm ${on ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`}
+              className={`mr-1.5 text-sm ${on ? 'text-teal-600 dark:text-teal-400' : 'text-slate-400'}`}
             >
               {on ? '☑' : '☐'}
             </Text>
             <Text
               className={`text-sm font-medium ${
                 on
-                  ? 'text-blue-700 dark:text-blue-300'
+                  ? 'text-teal-700 dark:text-teal-300'
                   : 'text-slate-600 dark:text-slate-400'
               }`}
             >
