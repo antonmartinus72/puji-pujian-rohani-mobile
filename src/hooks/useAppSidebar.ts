@@ -39,6 +39,10 @@ export function useAppSidebar(navigation: AppNavigation) {
         close();
         navigation.navigate('Settings');
       },
+      onOpenAbout: () => {
+        close();
+        navigation.navigate('About');
+      },
     }),
     [visible, close, navigation]
   );

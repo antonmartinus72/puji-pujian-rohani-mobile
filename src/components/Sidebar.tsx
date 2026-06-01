@@ -65,6 +65,7 @@ export interface SidebarProps {
   onOpenSetlists?: () => void;
   onOpenDatabase?: () => void;
   onOpenSettings?: () => void;
+  onOpenAbout?: () => void;
 }
 
 export default function Sidebar({
@@ -75,6 +76,7 @@ export default function Sidebar({
   onOpenSetlists,
   onOpenDatabase,
   onOpenSettings,
+  onOpenAbout,
 }: SidebarProps) {
   const insets = useSafeAreaInsets();
   const topInset = useTopInset();
@@ -221,6 +223,17 @@ export default function Sidebar({
             onPress={() => {
               onClose();
               onOpenSettings?.();
+            }}
+          />
+          <MenuRow
+            icon="information-circle-outline"
+            label="Tentang Aplikasi"
+            subtitle="Informasi, kontak, dan disclaimer"
+            iconMenu={colors.iconMenu}
+            iconChevron={colors.iconMuted}
+            onPress={() => {
+              onClose();
+              onOpenAbout?.();
             }}
           />
         </Animated.View>
