@@ -37,7 +37,7 @@ export default function SearchTagFilters({
               onPress={() => toggle(tag)}
               className={`rounded-xl px-3 py-1.5 ${
                 on
-                  ? 'bg-blue-500 dark:bg-blue-600'
+                  ? 'bg-teal-500 dark:bg-teal-600'
                   : 'border border-slate-200 bg-white dark:border-slate-600 dark:bg-slate-800'
               }`}
             >

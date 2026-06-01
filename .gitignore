@@ -43,3 +43,7 @@ yarn-error.*
 # local folders
 assets/PPR-Project
 /temp
+/assets/icon.png.bak
+/assets/splash-icon.png.bak
+/assets/favicon.png.bak
+/assets/adaptive-icon.png.bak

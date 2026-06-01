@@ -21,7 +21,7 @@ export default function SortByControl({ value, onChange }: SortByControlProps) {
           <Pressable
             key={key}
             onPress={() => onChange(key)}
-            className={`px-3 py-3 ${on ? 'bg-blue-500 dark:bg-blue-600' : ''} ${
+            className={`px-3 py-3 ${on ? 'bg-teal-500 dark:bg-teal-600' : ''} ${
               key === 'id' ? 'rounded-l-xl' : 'rounded-r-xl'
             }`}
           >
