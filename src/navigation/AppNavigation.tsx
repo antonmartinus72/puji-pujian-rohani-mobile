@@ -14,6 +14,9 @@ import SetlistScreen from '../screens/SetlistScreen';
 import SetlistDetailScreen from '../screens/SetlistDetailScreen';
 import DatabaseScreen from '../screens/DatabaseScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import AboutScreen from '../screens/AboutScreen';
+import DisclaimerScreen from '../screens/DisclaimerScreen';
+import AboutDetailScreen from '../screens/AboutDetailScreen';
 import type { RootStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -56,6 +59,9 @@ export default function AppNavigation() {
           <Stack.Screen name="SetlistDetail" component={SetlistDetailScreen} />
           <Stack.Screen name="Database" component={DatabaseScreen} />
           <Stack.Screen name="Settings" component={SettingsScreen} />
+          <Stack.Screen name="About" component={AboutScreen} />
+          <Stack.Screen name="Disclaimer" component={DisclaimerScreen} />
+          <Stack.Screen name="AboutDetail" component={AboutDetailScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </>

@@ -11,6 +11,9 @@ export type RootStackParamList = {
   SetlistDetail: { setlistId: string };
   Database: undefined;
   Settings: undefined;
+  About: undefined;
+  Disclaimer: undefined;
+  AboutDetail: undefined;
 };
 
 export type RootStackScreenProps<T extends keyof RootStackParamList> =
