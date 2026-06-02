@@ -9,7 +9,7 @@ export default function AboutDetailScreen({
   navigation,
 }: RootStackScreenProps<'AboutDetail'>) {
   const insets = useSafeAreaInsets();
-  
+
   const appVersion = appInfo.version;
 
   return (
@@ -55,6 +55,10 @@ export default function AboutDetailScreen({
           Nama: Anton Martinus{'\n'}
           Email: antonmartinus72@gmail.com{'\n'}
           GitHub: https://github.com/antonmartinus72
+        </Section>
+
+        <Section title="Kredit Lainnya">
+          Splash Screen Background by Rishi Jhajharia on Unsplash
         </Section>
 
         <Section title="Versi Aplikasi">
