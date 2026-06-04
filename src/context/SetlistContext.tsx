@@ -41,7 +41,7 @@ export interface SetlistContextValue {
   removeSongAt: (setlistId: string, index: number) => void;
   moveSong: (setlistId: string, index: number, delta: number) => void;
   getSetlist: (id: string | undefined) => WorshipSetlist | null;
-  buildShareText: (setlistId: string) => string;
+  buildShareText: (setlistId: string, option?: 'title_lyric' | 'title_only' | 'full_info') => string;
 }
 
 const SetlistContext = createContext<SetlistContextValue | null>(null);
@@ -303,15 +303,48 @@ export function SetlistProvider({ children }: { children: ReactNode }) {
   }, [activeSession, getSetlist]);
 
   const buildShareText = useCallback(
-    (setlistId: string) => {
+    (setlistId: string, option: 'title_lyric' | 'title_only' | 'full_info' = 'title_lyric') => {
       const sl = setlists.find((s) => s.id === setlistId);
       if (!sl) return '';
       const lines = sl.songs.map((songId, i) => {
         const song = songs.find((x) => Number(x.id) === Number(songId));
         const title = song ? formatListTitle(song) : '?';
-        return `${i + 1}. ${songId} — ${title}`;
+        let text = `${i + 1}. (#${songId}). ${title}`;
+
+        if (!song) return text;
+
+        if (option === 'title_lyric' || option === 'full_info') {
+          if (option === 'full_info') {
+            const extra = [];
+            if (song.rootNote) {
+              const key = song.rootNote + (song.scaleType === 'minor' ? 'm' : '');
+              extra.push(`Chord: ${key}`);
+            }
+            if (song.credit && song.credit.length > 0) {
+              extra.push(`Kredit: ${song.credit.join(', ')}`);
+            }
+            if (song.title && song.title.length > 1) {
+              const altTitles = song.title.slice(1).filter(t => t.trim());
+              if (altTitles.length > 0) {
+                extra.push(`Judul alternatif: ${altTitles.join(', ')}`);
+              }
+            }
+            if (extra.length > 0) {
+              text += `\n${extra.join('\n')}`;
+            }
+          }
+
+          if (song.lyrics && song.lyrics.length > 0) {
+            text += '\n';
+            song.lyrics.forEach(section => {
+              if (section.label) text += `\n[${section.label}]`;
+              if (section.lines) text += `\n${section.lines.join('\n')}`;
+            });
+          }
+        }
+        return text;
       });
-      return `${sl.name}\n\n${lines.join('\n')}`;
+      return `${sl.name}\n\n${lines.join('\n\n')}`;
     },
     [setlists, songs]
   );

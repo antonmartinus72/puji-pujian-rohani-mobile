@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import {
   Alert,
   FlatList,
+  Modal,
   Pressable,
   Share,
   Text,
@@ -37,6 +38,8 @@ export default function SetlistDetailScreen({
 
   const setlist = getSetlist(setlistId);
   const [name, setName] = useState(setlist?.name ?? '');
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareOption, setShareOption] = useState<'title_lyric' | 'title_only' | 'full_info'>('title_lyric');
 
   useEffect(() => {
     if (setlist) setName(setlist.name);
@@ -75,7 +78,8 @@ export default function SetlistDetailScreen({
   }
 
   async function onShare() {
-    const message = buildShareText(setlistId);
+    setShareOpen(false);
+    const message = buildShareText(setlistId, shareOption);
     if (!message.trim()) return;
     try {
       await Share.share({ message, title: activeSetlist.name });
@@ -134,8 +138,8 @@ export default function SetlistDetailScreen({
           <Text className="text-[15px] font-bold text-white">Tambah lagu</Text>
         </Pressable>
         <Pressable
-          className="min-h-[48px] flex-row items-center justify-center gap-1.5 rounded-[10px] border border-slate-300 px-4 py-3"
-          onPress={() => void onShare()}
+          className="min-h-[48px] flex-row items-center justify-center gap-1.5 rounded-[10px] border border-slate-300 px-4 py-3 dark:border-slate-600"
+          onPress={() => setShareOpen(true)}
         >
           <Ionicons name="share-outline" size={20} color={colors.iconOnCard} />
           <Text className="text-[15px] font-semibold text-slate-700 dark:text-slate-300">
@@ -218,6 +222,71 @@ export default function SetlistDetailScreen({
           <Text className="text-[15px] font-semibold text-red-700">Hapus setlist</Text>
         </Pressable>
       </View>
+
+      <Modal visible={shareOpen} transparent animationType="fade">
+        <Pressable
+          className="flex-1 items-center justify-center bg-black/45 px-6"
+          onPress={() => setShareOpen(false)}
+        >
+          <Pressable
+            className="w-full max-w-sm rounded-2xl bg-white p-5 dark:bg-slate-800"
+            onPress={(e) => e.stopPropagation()}
+          >
+            <Text className="mb-4 text-lg font-bold text-slate-900 dark:text-slate-100">
+              Opsi Bagikan Setlist
+            </Text>
+
+            <View className="mb-6 flex-col gap-3">
+              <Pressable
+                className={`flex-row items-center gap-3 rounded-xl border px-4 py-3 ${shareOption === 'title_lyric' ? 'border-nav bg-nav/10 dark:bg-nav/10' : 'border-slate-200 dark:border-slate-600'}`}
+                onPress={() => setShareOption('title_lyric')}
+              >
+                <View className={`h-5 w-5 rounded-full border-[1.5px] items-center justify-center ${shareOption === 'title_lyric' ? 'border-nav' : 'border-slate-300 dark:border-slate-500'}`}>
+                  {shareOption === 'title_lyric' && <View className="h-2.5 w-2.5 rounded-full bg-nav" />}
+                </View>
+                <Text className={`text-base ${shareOption === 'title_lyric' ? 'font-semibold text-nav' : 'text-slate-700 dark:text-slate-300'}`}>Judul & Lirik (default)</Text>
+              </Pressable>
+
+              <Pressable
+                className={`flex-row items-center gap-3 rounded-xl border px-4 py-3 ${shareOption === 'title_only' ? 'border-nav bg-nav/10 dark:bg-nav/10' : 'border-slate-200 dark:border-slate-600'}`}
+                onPress={() => setShareOption('title_only')}
+              >
+                <View className={`h-5 w-5 rounded-full border-[1.5px] items-center justify-center ${shareOption === 'title_only' ? 'border-nav' : 'border-slate-300 dark:border-slate-500'}`}>
+                  {shareOption === 'title_only' && <View className="h-2.5 w-2.5 rounded-full bg-nav" />}
+                </View>
+                <Text className={`text-base ${shareOption === 'title_only' ? 'font-semibold text-nav' : 'text-slate-700 dark:text-slate-300'}`}>Judul saja</Text>
+              </Pressable>
+
+              <Pressable
+                className={`flex-row items-center gap-3 rounded-xl border px-4 py-3 ${shareOption === 'full_info' ? 'border-nav bg-nav/10 dark:bg-nav/10' : 'border-slate-200 dark:border-slate-600'}`}
+                onPress={() => setShareOption('full_info')}
+              >
+                <View className={`h-5 w-5 rounded-full border-[1.5px] items-center justify-center ${shareOption === 'full_info' ? 'border-nav' : 'border-slate-300 dark:border-slate-500'}`}>
+                  {shareOption === 'full_info' && <View className="h-2.5 w-2.5 rounded-full bg-nav" />}
+                </View>
+                <Text className={`text-base ${shareOption === 'full_info' ? 'font-semibold text-nav' : 'text-slate-700 dark:text-slate-300'}`}>Seluruh info lagu</Text>
+              </Pressable>
+            </View>
+
+            <View className="flex-row gap-2">
+              <Pressable
+                className="flex-1 items-center rounded-xl bg-slate-200 py-3 dark:bg-slate-700"
+                onPress={() => setShareOpen(false)}
+              >
+                <Text className="font-semibold text-slate-700 dark:text-slate-200">
+                  Batal
+                </Text>
+              </Pressable>
+              <Pressable
+                className="flex-1 items-center rounded-xl bg-nav py-3"
+                onPress={onShare}
+              >
+                <Text className="font-bold text-white">Bagikan</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }

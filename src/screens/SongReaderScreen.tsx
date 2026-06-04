@@ -331,7 +331,7 @@ export default function SongReaderScreen({
             <GestureDetector gesture={pinchZoomLyrics}>
               <View collapsable={false} className="pb-2">
                 <Text className="mb-4 text-xs leading-[17px] text-slate-500">
-                  Ketuk beberapa bagian (verse, chorus, …) untuk memilih. Cubit dua
+                  Ketuk beberapa bagian (bait, reff, …) untuk memilih. Cubit dua
                   jari untuk zoom teks lirik. Geser kiri/kanan untuk lagu
                   berikutnya/sebelumnya.
                 </Text>

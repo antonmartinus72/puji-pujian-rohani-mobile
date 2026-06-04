@@ -1,348 +1,348 @@
 {
-    "version": "1.0.0",
-    "updatedAt": "2026-05-18",
-    "totalSongs": 10,
-    "songs": [
+  "version": "1.0.0",
+  "updatedAt": "2026-05-18",
+  "totalSongs": 10,
+  "songs": [
+    {
+      "id": 1,
+      "title": [
+        "BERTEMU DALAM KASIH-NYA",
+        "Berkumpul dalam anugerah-Nya"
+      ],
+      "credit": [
+        "Kompilasi 2011 - Maranatha",
+        "Album: Ada Kuasa Dalam Pujian"
+      ],
+      "tags": [
+        "persekutuan",
+        "pembukaan"
+      ],
+      "rootNote": "",
+      "scaleType": "",
+      "lyrics": [
         {
-            "id": 1,
-            "title": [
-                "BERTEMU DALAM KASIH-NYA",
-                "Berkumpul dalam anugerah-Nya"
-            ],
-            "credit": [
-                "Kompilasi 2011 - Maranatha",
-                "Album: Ada Kuasa Dalam Pujian"
-            ],
-            "tags": [
-                "persekutuan",
-                "pembukaan"
-            ],
-            "rootNote": "",
-            "scaleType": "",
-            "lyrics": [
-                {
-                    "label": "Verse",
-                    "lines": [
-                        "Bertemu dalam kasih-Nya",
-                        "Berkumpul dalam anugerah-Nya",
-                        "Bersukacita semua",
-                        "Di dalam rumah Tuhan"
-                    ]
-                },
-                {
-                    "label": "Reff",
-                    "lines": [
-                        "Oh saudaraku dan saudariku",
-                        "Tuhan cinta dan mengasihimu",
-                        "Mari bersukacita semua",
-                        "Di dalam rumah Tuhan"
-                    ]
-                }
-            ]
+          "label": "Bait/Verse",
+          "lines": [
+            "Bertemu dalam kasih-Nya",
+            "Berkumpul dalam anugerah-Nya",
+            "Bersukacita semua",
+            "Di dalam rumah Tuhan"
+          ]
         },
         {
-            "id": 2,
-            "title": [
-                "HARI INI KURASA BAHAGIA"
-            ],
-            "credit": [
-                "Kretarto & Niken"
-            ],
-            "tags": [
-                "syukur",
-                "persekutuan"
-            ],
-            "rootNote": "",
-            "scaleType": "",
-            "lyrics": [
-                {
-                    "label": "Verse 1",
-                    "lines": [
-                        "Hari ini kurasa bahagia",
-                        "Berkumpul bersama saudara seiman",
-                        "Tuhan Yesus t'lah satukan kita",
-                        "Tanpa memandang di antara kita"
-                    ]
-                },
-                {
-                    "label": "Verse 2",
-                    "lines": [
-                        "Bergandengan tangan dalam kasih",
-                        "Dalam satu hati berjalan dalam terang kasih Tuhan",
-                        "Kau sahabatku dan kau saudaraku",
-                        "Tiada yang dapat memisahkan kita"
-                    ]
-                }
-            ]
-        },
-        {
-            "id": 3,
-            "title": [
-                "ALLAH DI SINI",
-                "Allah di Sini (di hati)"
-            ],
-            "credit": [
-                "Maranatha Singers",
-                "Album: 40 Nonstop Hits Rohani, Vol. 2"
-            ],
-            "tags": [
-                "penyembahan"
-            ],
-            "rootNote": "",
-            "scaleType": "",
-            "lyrics": [
-                {
-                    "label": "Verse",
-                    "lines": [
-                        "Allah di sini",
-                        "Sepasti udara segar yang ku hirup",
-                        "Ya sepasti fajar yang merekah setiap hari",
-                        "Dengarkan doaku, ya Allah yang hidup"
-                    ]
-                }
-            ]
-        },
-        {
-            "id": 4,
-            "title": [
-                "SATUKANLAH HATI KAMI"
-            ],
-            "credit": [
-                "Hank Samuel"
-            ],
-            "tags": [
-                "persatuan",
-                "kasih"
-            ],
-            "rootNote": "",
-            "scaleType": "",
-            "lyrics": [
-                {
-                    "label": "Verse 1",
-                    "lines": [
-                        "Satukanlah hati kami",
-                        "'Tuk memuji dan menyembah",
-                        "Oh Yesus, Tuhan dan Rajaku"
-                    ]
-                },
-                {
-                    "label": "Verse 2",
-                    "lines": [
-                        "Eratkanlah tali kasih di antara kami semua",
-                        "Oh Yesus, Tuhan dan Rajaku"
-                    ]
-                },
-                {
-                    "label": "Reff",
-                    "lines": [
-                        "Bergandengan tangan dalam kasih, dalam satu hati",
-                        "Bergandengan tangan dalam satu iman",
-                        "Saling mengasihi di antara kami",
-                        "Keluarga kerajaan Allah"
-                    ]
-                }
-            ]
-        },
-        {
-            "id": 5,
-            "title": [
-                "YESUS OH YESUS"
-            ],
-            "credit": [
-                "Lagu Sekolah Minggu"
-            ],
-            "tags": [
-                "pujian anak",
-                "Yesus"
-            ],
-            "rootNote": "",
-            "scaleType": "",
-            "lyrics": [
-                {
-                    "label": "Verse",
-                    "lines": [
-                        "Yesus oh Yesus, manis nama-Mu",
-                        "Yesus oh Yesus, Kau kekasihku"
-                    ]
-                },
-                {
-                    "label": "Reff",
-                    "lines": [
-                        "Ingat nama-Mu, 'ku tak sedih",
-                        "Ingat nama-Mu, 'ku bernyanyi",
-                        "Ingat nama-Mu, 'ku berglori",
-                        "Yesus, Pengharapanku"
-                    ]
-                }
-            ]
-        },
-        {
-            "id": 6,
-            "title": [
-                "SAAT INI SAAT INDAH"
-            ],
-            "credit": [],
-            "tags": [
-                "penyembahan",
-                "urapan"
-            ],
-            "rootNote": "",
-            "scaleType": "",
-            "lyrics": [
-                {
-                    "label": "Verse 1",
-                    "lines": [
-                        "Saat ini saat indah",
-                        "Ku memuji dan menyembah",
-                        "Hadirat-Mu kurasakan",
-                        "Saat ini, saat ini"
-                    ]
-                },
-                {
-                    "label": "Verse 2",
-                    "lines": [
-                        "Saat ini saat Tuhan",
-                        "Kau curahkan urapan-Mu",
-                        "Urapan-Mu kurasakan",
-                        "Saat aku menyembah Kau, Tuhan"
-                    ]
-                }
-            ]
-        },
-        {
-            "id": 7,
-            "title": [
-                "YA TUHAN KUPERCAYA"
-            ],
-            "credit": [],
-            "tags": [
-                "iman",
-                "percaya"
-            ],
-            "rootNote": "",
-            "scaleType": "",
-            "lyrics": [
-                {
-                    "label": "Verse",
-                    "lines": [
-                        "Ya Tuhan, kupercaya, aku percaya",
-                        "Lewati lembah air mata, aku percaya",
-                        "Firman-Mu ya dan amin, aku percaya",
-                        "Kemenangan sudah Kau jamin, aku percaya"
-                    ]
-                }
-            ]
-        },
-        {
-            "id": 8,
-            "title": [
-                "YANG KUSEMBAH HANYA YESUS"
-            ],
-            "credit": [
-                "Priskila",
-                "Album: Pujian Penyembahan, Vol. 4"
-            ],
-            "tags": [
-                "penyembahan",
-                "Yesus"
-            ],
-            "rootNote": "",
-            "scaleType": "",
-            "lyrics": [
-                {
-                    "label": "Verse 1",
-                    "lines": [
-                        "Yang kusembah hanya Yesus",
-                        "Yang kupuja hanya Yesus",
-                        "Yang kusanjung hanya Yesus",
-                        "Sebab Kau Allahku"
-                    ]
-                },
-                {
-                    "label": "Verse 2",
-                    "lines": [
-                        "Yesus, Kau Allahku, Yesus, Engkau Tuhanku",
-                        "Yesus, Engkau Rajaku yang turun ke dunia",
-                        "Yesus, kusembah Kau",
-                        "Curahkan Roh Kudus-Mu",
-                        "Kini aku menyembah.. masuk hadirat-Mu"
-                    ]
-                }
-            ]
-        },
-        {
-            "id": 9,
-            "title": [
-                "DI HADIRAT-MU AKU PUAS"
-            ],
-            "credit": [
-                "GBI HoR"
-            ],
-            "tags": [
-                "penyembahan",
-                "hadirat"
-            ],
-            "rootNote": "",
-            "scaleType": "",
-            "lyrics": [
-                {
-                    "label": "Verse",
-                    "lines": [
-                        "Di hadirat-Mu aku puas",
-                        "Di hadirat-Mu aku bebas",
-                        "Di hadirat-Mu ada terang kehidupanku",
-                        "Pernyataan kuasa, kekuatan-Mu",
-                        "Di hadirat-Mu ku datang",
-                        "Persembahkan lagu di hadapan Rajaku"
-                    ]
-                }
-            ]
-        },
-        {
-            "id": 10,
-            "title": [
-                "MENYENANGKANMU",
-                "Tuhan Ku Mau MenyenangkanMu"
-            ],
-            "credit": [
-                "Regina Pangkerego",
-                "Yeshua Abraham - Welyar Kauntu"
-            ],
-            "tags": [
-                "penyembahan",
-                "kerinduan"
-            ],
-            "rootNote": "",
-            "scaleType": "",
-            "lyrics": [
-                {
-                    "label": "Verse 1",
-                    "lines": [
-                        "Tuhan, kumau menyenangkan-Mu",
-                        "Tuhan, bentuklah hati ini",
-                        "Jadi bejana untuk hormat-Mu",
-                        "Cemerlang bagai emas murni"
-                    ]
-                },
-                {
-                    "label": "Verse 2",
-                    "lines": [
-                        "Tuhan, kuserahkan hatiku",
-                        "Semua kuberikan kepada-Mu",
-                        "Kuduskan hingga tulus selalu",
-                        "Agar aku menyenangkan-Mu"
-                    ]
-                },
-                {
-                    "label": "Reff",
-                    "lines": [
-                        "Menyenangkan-Mu, senangkan-Mu",
-                        "Hanya itu kerinduanku",
-                        "Menyenangkan-Mu, senangkan hati-Mu",
-                        "Hanya itu kerinduanku"
-                    ]
-                }
-            ]
+          "label": "Reff/Chorus",
+          "lines": [
+            "Oh saudaraku dan saudariku",
+            "Tuhan cinta dan mengasihimu",
+            "Mari bersukacita semua",
+            "Di dalam rumah Tuhan"
+          ]
         }
-    ]
+      ]
+    },
+    {
+      "id": 2,
+      "title": [
+        "HARI INI KURASA BAHAGIA"
+      ],
+      "credit": [
+        "Kretarto & Niken"
+      ],
+      "tags": [
+        "syukur",
+        "persekutuan"
+      ],
+      "rootNote": "",
+      "scaleType": "",
+      "lyrics": [
+        {
+          "label": "Bait/Verse 1",
+          "lines": [
+            "Hari ini kurasa bahagia",
+            "Berkumpul bersama saudara seiman",
+            "Tuhan Yesus t'lah satukan kita",
+            "Tanpa memandang di antara kita"
+          ]
+        },
+        {
+          "label": "Bait/Verse 2",
+          "lines": [
+            "Bergandengan tangan dalam kasih",
+            "Dalam satu hati berjalan dalam terang kasih Tuhan",
+            "Kau sahabatku dan kau saudaraku",
+            "Tiada yang dapat memisahkan kita"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": [
+        "ALLAH DI SINI",
+        "Allah di Sini (di hati)"
+      ],
+      "credit": [
+        "Maranatha Singers",
+        "Album: 40 Nonstop Hits Rohani, Vol. 2"
+      ],
+      "tags": [
+        "penyembahan"
+      ],
+      "rootNote": "",
+      "scaleType": "",
+      "lyrics": [
+        {
+          "label": "Bait/Verse",
+          "lines": [
+            "Allah di sini",
+            "Sepasti udara segar yang ku hirup",
+            "Ya sepasti fajar yang merekah setiap hari",
+            "Dengarkan doaku, ya Allah yang hidup"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": [
+        "SATUKANLAH HATI KAMI"
+      ],
+      "credit": [
+        "Hank Samuel"
+      ],
+      "tags": [
+        "persatuan",
+        "kasih"
+      ],
+      "rootNote": "",
+      "scaleType": "",
+      "lyrics": [
+        {
+          "label": "Bait/Verse 1",
+          "lines": [
+            "Satukanlah hati kami",
+            "'Tuk memuji dan menyembah",
+            "Oh Yesus, Tuhan dan Rajaku"
+          ]
+        },
+        {
+          "label": "Bait/Verse 2",
+          "lines": [
+            "Eratkanlah tali kasih di antara kami semua",
+            "Oh Yesus, Tuhan dan Rajaku"
+          ]
+        },
+        {
+          "label": "Reff/Chorus",
+          "lines": [
+            "Bergandengan tangan dalam kasih, dalam satu hati",
+            "Bergandengan tangan dalam satu iman",
+            "Saling mengasihi di antara kami",
+            "Keluarga kerajaan Allah"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": [
+        "YESUS OH YESUS"
+      ],
+      "credit": [
+        "Lagu Sekolah Minggu"
+      ],
+      "tags": [
+        "pujian anak",
+        "Yesus"
+      ],
+      "rootNote": "",
+      "scaleType": "",
+      "lyrics": [
+        {
+          "label": "Bait/Verse",
+          "lines": [
+            "Yesus oh Yesus, manis nama-Mu",
+            "Yesus oh Yesus, Kau kekasihku"
+          ]
+        },
+        {
+          "label": "Reff/Chorus",
+          "lines": [
+            "Ingat nama-Mu, 'ku tak sedih",
+            "Ingat nama-Mu, 'ku bernyanyi",
+            "Ingat nama-Mu, 'ku berglori",
+            "Yesus, Pengharapanku"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": [
+        "SAAT INI SAAT INDAH"
+      ],
+      "credit": [],
+      "tags": [
+        "penyembahan",
+        "urapan"
+      ],
+      "rootNote": "",
+      "scaleType": "",
+      "lyrics": [
+        {
+          "label": "Bait/Verse 1",
+          "lines": [
+            "Saat ini saat indah",
+            "Ku memuji dan menyembah",
+            "Hadirat-Mu kurasakan",
+            "Saat ini, saat ini"
+          ]
+        },
+        {
+          "label": "Bait/Verse 2",
+          "lines": [
+            "Saat ini saat Tuhan",
+            "Kau curahkan urapan-Mu",
+            "Urapan-Mu kurasakan",
+            "Saat aku menyembah Kau, Tuhan"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": [
+        "YA TUHAN KUPERCAYA"
+      ],
+      "credit": [],
+      "tags": [
+        "iman",
+        "percaya"
+      ],
+      "rootNote": "",
+      "scaleType": "",
+      "lyrics": [
+        {
+          "label": "Bait/Verse",
+          "lines": [
+            "Ya Tuhan, kupercaya, aku percaya",
+            "Lewati lembah air mata, aku percaya",
+            "Firman-Mu ya dan amin, aku percaya",
+            "Kemenangan sudah Kau jamin, aku percaya"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "title": [
+        "YANG KUSEMBAH HANYA YESUS"
+      ],
+      "credit": [
+        "Priskila",
+        "Album: Pujian Penyembahan, Vol. 4"
+      ],
+      "tags": [
+        "penyembahan",
+        "Yesus"
+      ],
+      "rootNote": "",
+      "scaleType": "",
+      "lyrics": [
+        {
+          "label": "Bait/Verse 1",
+          "lines": [
+            "Yang kusembah hanya Yesus",
+            "Yang kupuja hanya Yesus",
+            "Yang kusanjung hanya Yesus",
+            "Sebab Kau Allahku"
+          ]
+        },
+        {
+          "label": "Bait/Verse 2",
+          "lines": [
+            "Yesus, Kau Allahku, Yesus, Engkau Tuhanku",
+            "Yesus, Engkau Rajaku yang turun ke dunia",
+            "Yesus, kusembah Kau",
+            "Curahkan Roh Kudus-Mu",
+            "Kini aku menyembah.. masuk hadirat-Mu"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "title": [
+        "DI HADIRAT-MU AKU PUAS"
+      ],
+      "credit": [
+        "GBI HoR"
+      ],
+      "tags": [
+        "penyembahan",
+        "hadirat"
+      ],
+      "rootNote": "",
+      "scaleType": "",
+      "lyrics": [
+        {
+          "label": "Bait/Verse",
+          "lines": [
+            "Di hadirat-Mu aku puas",
+            "Di hadirat-Mu aku bebas",
+            "Di hadirat-Mu ada terang kehidupanku",
+            "Pernyataan kuasa, kekuatan-Mu",
+            "Di hadirat-Mu ku datang",
+            "Persembahkan lagu di hadapan Rajaku"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "title": [
+        "MENYENANGKANMU",
+        "Tuhan Ku Mau MenyenangkanMu"
+      ],
+      "credit": [
+        "Regina Pangkerego",
+        "Yeshua Abraham - Welyar Kauntu"
+      ],
+      "tags": [
+        "penyembahan",
+        "kerinduan"
+      ],
+      "rootNote": "",
+      "scaleType": "",
+      "lyrics": [
+        {
+          "label": "Bait/Verse 1",
+          "lines": [
+            "Tuhan, kumau menyenangkan-Mu",
+            "Tuhan, bentuklah hati ini",
+            "Jadi bejana untuk hormat-Mu",
+            "Cemerlang bagai emas murni"
+          ]
+        },
+        {
+          "label": "Bait/Verse 2",
+          "lines": [
+            "Tuhan, kuserahkan hatiku",
+            "Semua kuberikan kepada-Mu",
+            "Kuduskan hingga tulus selalu",
+            "Agar aku menyenangkan-Mu"
+          ]
+        },
+        {
+          "label": "Reff/Chorus",
+          "lines": [
+            "Menyenangkan-Mu, senangkan-Mu",
+            "Hanya itu kerinduanku",
+            "Menyenangkan-Mu, senangkan hati-Mu",
+            "Hanya itu kerinduanku"
+          ]
+        }
+      ]
+    }
+  ]
 }
